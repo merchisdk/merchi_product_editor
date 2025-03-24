@@ -1,0 +1,41 @@
+{
+  "name": "merchi_product_editor",
+  "version": "0.1.0",
+  "description": "A React component for editing product images using Fabric.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "react",
+    "fabric.js",
+    "product-editor",
+    "image-editor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "dependencies": {
+    "fabric": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^4.9.0",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/jest-dom": "^5.16.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "@types/fabric": "^5.3.0"
+  }
+} 
