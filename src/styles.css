@@ -1,10 +1,11 @@
 .product-editor {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: #f5f5f5;
+  gap: 0;
+  padding: 0;
+  background-color: transparent;
   border-radius: 8px;
+  position: relative;
 }
 
 .editor-toolbar {
@@ -44,4 +45,135 @@
 
 .editor-toolbar button:last-child:hover {
   background-color: #c82333;
-} 
+}
+
+/* Template buttons styles */
+.template-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0;
+  margin-bottom: -1px;
+  z-index: 2;
+  width: 100%;
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: 10%;
+  transform: translateX(30px);
+}
+
+.template-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 120px;
+  height: 40px;
+  background-color: #f5f5f5;
+  border-radius: 8px 8px 0 0;
+  transition: background-color 0.2s ease;
+}
+
+.template-button.selected {
+  background-color: #303DBF;
+  color: white;
+}
+
+.template-image {
+  display: none;
+}
+
+.template-name {
+  font-size: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Main layout */
+.main-editor-layout {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Editor container */
+.editor-container {
+  flex: 1;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Left toolbar styles */
+.left-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 4px;
+  width: 80px;
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  justify-content: space-between;
+  min-height: 240px;
+}
+
+.toolbar-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.grid-toggle {
+  margin-top: auto;
+  width: 100%;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 1rem;
+}
+
+.toolbar-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  width: 100%;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.toolbar-button:hover {
+  background-color: #f5f5f5;
+}
+
+.toolbar-button.active {
+  background-color: #e6f7ff;
+  color: #303DBF;
+}
+
+.toolbar-button:last-child {
+  margin-bottom: 0;
+}
+
+.toolbar-button span {
+  margin-top: 0.25rem;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Canvas area */
+.canvas-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 4px;
+  padding: 1rem;
+}
