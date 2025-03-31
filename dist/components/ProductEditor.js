@@ -33,6 +33,18 @@ var ProductEditor = function (_a) {
     var _d = (0, react_1.useState)(null), canvas = _d[0], setCanvas = _d[1];
     var _e = (0, react_1.useState)(null), selectedTemplate = _e[0], setSelectedTemplate = _e[1];
     var _f = (0, react_1.useState)(false), showGrid = _f[0], setShowGrid = _f[1];
+    var _g = (0, react_1.useState)(false), isMobileView = _g[0], setIsMobileView = _g[1];
+    // Check if we're on a small screen
+    (0, react_1.useEffect)(function () {
+        if (typeof window !== 'undefined') {
+            var updateViewMode_1 = function () {
+                setIsMobileView(window.innerWidth < 480);
+            };
+            updateViewMode_1();
+            window.addEventListener('resize', updateViewMode_1);
+            return function () { return window.removeEventListener('resize', updateViewMode_1); };
+        }
+    }, []);
     (0, react_1.useEffect)(function () {
         var _a;
         if (canvasRef.current) {
@@ -114,24 +126,27 @@ var ProductEditor = function (_a) {
     var disableCanvasEvents = function (e) {
         e.stopPropagation();
     };
+    // Create toolbar content
+    var renderToolbarContent = function () { return (react_1.default.createElement(react_1.default.Fragment, null,
+        react_1.default.createElement("div", { className: "toolbar-content" },
+            react_1.default.createElement("div", { className: "toolbar-button" },
+                react_1.default.createElement(react_icons_1.ImageIcon, { width: 24, height: 24 }),
+                react_1.default.createElement("span", null, "Upload Image")),
+            react_1.default.createElement("div", { className: "toolbar-button" },
+                react_1.default.createElement(react_icons_1.TextIcon, { width: 24, height: 24 }),
+                react_1.default.createElement("span", null, "Add Text"))),
+        react_1.default.createElement("div", { className: "grid-toggle" },
+            react_1.default.createElement("div", { className: "toolbar-button ".concat(showGrid ? 'active' : ''), onClick: toggleGrid },
+                react_1.default.createElement(react_icons_1.DashboardIcon, { width: 24, height: 24 }),
+                react_1.default.createElement("span", null, showGrid ? 'Hide Grid' : 'Show Grid'))))); };
     return (react_1.default.createElement("div", { className: "product-editor" },
         product.draftTemplates && product.draftTemplates.length > 0 && (react_1.default.createElement("div", { className: "template-buttons" }, product.draftTemplates.map(function (template) { return (react_1.default.createElement("div", { key: template.id, className: "template-button ".concat((selectedTemplate === null || selectedTemplate === void 0 ? void 0 : selectedTemplate.id) === template.id ? 'selected' : ''), onClick: function () { return handleTemplateChange(template); } },
             react_1.default.createElement("span", { className: "template-name" }, template.name || "Template ".concat(template.id)))); }))),
         react_1.default.createElement("div", { className: "main-editor-layout" },
-            react_1.default.createElement("div", { className: "left-toolbar" },
-                react_1.default.createElement("div", { className: "toolbar-content" },
-                    react_1.default.createElement("div", { className: "toolbar-button" },
-                        react_1.default.createElement(react_icons_1.ImageIcon, { width: 24, height: 24 }),
-                        react_1.default.createElement("span", null, "Upload Image")),
-                    react_1.default.createElement("div", { className: "toolbar-button" },
-                        react_1.default.createElement(react_icons_1.TextIcon, { width: 24, height: 24 }),
-                        react_1.default.createElement("span", null, "Add Text"))),
-                react_1.default.createElement("div", { className: "grid-toggle" },
-                    react_1.default.createElement("div", { className: "toolbar-button ".concat(showGrid ? 'active' : ''), onClick: toggleGrid },
-                        react_1.default.createElement(react_icons_1.DashboardIcon, { width: 24, height: 24 }),
-                        react_1.default.createElement("span", null, showGrid ? 'Hide Grid' : 'Show Grid')))),
+            !isMobileView && (react_1.default.createElement("div", { className: "left-toolbar" }, renderToolbarContent())),
             react_1.default.createElement("div", { className: "editor-container" },
                 react_1.default.createElement("div", { className: "canvas-area", onClick: disableCanvasEvents },
-                    react_1.default.createElement("canvas", { ref: canvasRef }))))));
+                    react_1.default.createElement("canvas", { ref: canvasRef })))),
+        isMobileView && (react_1.default.createElement("div", { className: "bottom-toolbar" }, renderToolbarContent()))));
 };
 exports.default = ProductEditor;

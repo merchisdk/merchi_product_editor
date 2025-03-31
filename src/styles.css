@@ -58,7 +58,7 @@
   width: 100%;
   max-width: 550px;
   margin-left: auto;
-  margin-right: 10%;
+  margin-right: 15%;
   transform: translateX(30px);
 }
 
@@ -129,6 +129,40 @@
   width: 100%;
 }
 
+/* Bottom toolbar for mobile */
+.bottom-toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 4px;
+  width: 100%;
+  margin-top: 0.5rem;
+  justify-content: space-between;
+}
+
+.bottom-toolbar .toolbar-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bottom-toolbar .grid-toggle {
+  margin-top: 0;
+  width: auto;
+  border-top: none;
+  border-left: 1px solid #f0f0f0;
+  padding-top: 0;
+  padding-left: 1rem;
+}
+
+.bottom-toolbar .toolbar-button {
+  margin-bottom: 0;
+  margin-right: 0.5rem;
+}
+
 .grid-toggle {
   margin-top: auto;
   width: 100%;
@@ -176,4 +210,27 @@
   background-color: #ffffff;
   border-radius: 4px;
   padding: 1rem;
+}
+
+/* Responsive layout */
+@media (max-width: 480px) {
+  .main-editor-layout {
+    flex-direction: column;
+  }
+
+  .template-buttons {
+    transform: none;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 300px;
+  }
+
+  .template-button {
+    width: 90px;
+    font-size: 14px;
+  }
+
+  .template-name {
+    font-size: 14px;
+  }
 }

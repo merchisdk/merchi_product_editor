@@ -15,6 +15,21 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<DraftTemplate | null>(null);
   const [showGrid, setShowGrid] = useState<boolean>(false);
+  const [isMobileView, setIsMobileView] = useState<boolean>(false);
+
+  // Check if we're on a small screen
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const updateViewMode = () => {
+        setIsMobileView(window.innerWidth < 480);
+      }
+
+      updateViewMode();
+      window.addEventListener('resize', updateViewMode);
+
+      return () => window.removeEventListener('resize', updateViewMode);
+    }
+  }, []);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -88,16 +103,16 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
     });
   };
 
-  const handleSave = () => {
-    if (!canvas) return;
+  // const handleSave = () => {
+  //   if (!canvas) return;
 
-    const dataUrl = canvas.toDataURL({
-      format: 'png',
-      quality: 1,
-    });
+  //   const dataUrl = canvas.toDataURL({
+  //     format: 'png',
+  //     quality: 1,
+  //   });
 
-    onSave?.(dataUrl);
-  };
+  //   onSave?.(dataUrl);
+  // };
 
   const handleTemplateChange = (template: DraftTemplate) => {
     if (!canvas) return;
@@ -115,6 +130,33 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
   const disableCanvasEvents = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  // Create toolbar content
+  const renderToolbarContent = () => (
+    <>
+      <div className="toolbar-content">
+        <div className="toolbar-button">
+          <ImageIcon width={24} height={24} />
+          <span>Upload Image</span>
+        </div>
+        <div className="toolbar-button">
+          <TextIcon width={24} height={24} />
+          <span>Add Text</span>
+        </div>
+      </div>
+
+      {/* Grid toggle button */}
+      <div className="grid-toggle">
+        <div
+          className={`toolbar-button ${showGrid ? 'active' : ''}`}
+          onClick={toggleGrid}
+        >
+          <DashboardIcon width={24} height={24} />
+          <span>{showGrid ? 'Hide Grid' : 'Show Grid'}</span>
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <div className="product-editor">
@@ -134,30 +176,12 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
       )}
 
       <div className="main-editor-layout">
-        {/* Left toolbar */}
-        <div className="left-toolbar">
-          <div className="toolbar-content">
-            <div className="toolbar-button">
-              <ImageIcon width={24} height={24} />
-              <span>Upload Image</span>
-            </div>
-            <div className="toolbar-button">
-              <TextIcon width={24} height={24} />
-              <span>Add Text</span>
-            </div>
+        {/* Show left toolbar only in desktop view */}
+        {!isMobileView && (
+          <div className="left-toolbar">
+            {renderToolbarContent()}
           </div>
-
-          {/* Grid toggle button */}
-          <div className="grid-toggle">
-            <div
-              className={`toolbar-button ${showGrid ? 'active' : ''}`}
-              onClick={toggleGrid}
-            >
-              <DashboardIcon width={24} height={24} />
-              <span>{showGrid ? 'Hide Grid' : 'Show Grid'}</span>
-            </div>
-          </div>
-        </div>
+        )}
 
         <div className="editor-container">
           {/* Canvas area */}
@@ -166,6 +190,13 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Show bottom toolbar only in mobile view */}
+      {isMobileView && (
+        <div className="bottom-toolbar">
+          {renderToolbarContent()}
+        </div>
+      )}
     </div>
   );
 };
