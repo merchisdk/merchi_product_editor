@@ -25,8 +25,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var react_1 = __importStar(require("react"));
 var fabric_1 = require("fabric");
-var react_icons_1 = require("@radix-ui/react-icons");
 var EditorGrid_1 = require("./EditorGrid");
+var AddText_1 = require("../utils/AddText");
+var ImageHandler_1 = require("../utils/ImageHandler");
+var grommet_icons_1 = require("grommet-icons");
+var react_icons_1 = require("@radix-ui/react-icons");
 var ProductEditor = function (_a) {
     var product = _a.product, _b = _a.width, width = _b === void 0 ? 800 : _b, _c = _a.height, height = _c === void 0 ? 600 : _c, onSave = _a.onSave, onCancel = _a.onCancel;
     var canvasRef = (0, react_1.useRef)(null);
@@ -48,29 +51,37 @@ var ProductEditor = function (_a) {
     (0, react_1.useEffect)(function () {
         var _a;
         if (canvasRef.current) {
-            var fabricCanvas = new fabric_1.fabric.Canvas(canvasRef.current, {
+            var fabricCanvas_1 = new fabric_1.fabric.Canvas(canvasRef.current, {
                 width: width,
                 height: height,
                 backgroundColor: '#ffffff',
             });
-            setCanvas(fabricCanvas);
+            setCanvas(fabricCanvas_1);
             // If there are draft templates, use the first one as default
             if (product.draftTemplates && product.draftTemplates.length > 0) {
                 var template = product.draftTemplates[0];
                 setSelectedTemplate(template);
                 if ((_a = template.file) === null || _a === void 0 ? void 0 : _a.url) {
-                    loadTemplateImage(fabricCanvas, template);
+                    loadTemplateImage(fabricCanvas_1, template);
                 }
             }
             // Draw grid after loading the template
-            (0, EditorGrid_1.drawGrid)(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
+            (0, EditorGrid_1.drawGrid)(fabricCanvas_1, width, height, 20, '#a0a0a0', showGrid);
+            // setup keyboard delete event
+            var cleanupKeyboardEvents_1 = (0, ImageHandler_1.setupKeyboardEvents)(fabricCanvas_1, onSave);
+            return function () {
+                cleanupKeyboardEvents_1();
+                if (fabricCanvas_1) {
+                    fabricCanvas_1.dispose();
+                }
+            };
         }
         return function () {
             if (canvas) {
                 canvas.dispose();
             }
         };
-    }, [product, width, height]);
+    }, [product, width, height, onSave]);
     // draw grid when the grid state or canvas size changes
     (0, react_1.useEffect)(function () {
         if (canvas) {
@@ -87,6 +98,8 @@ var ProductEditor = function (_a) {
         // clear all objects except the grid
         (0, EditorGrid_1.clearCanvasExceptGrid)(fabricCanvas);
         fabric_1.fabric.Image.fromURL(template.file.url, function (img) {
+            if (!fabricCanvas)
+                return;
             // Scale image to fit canvas while maintaining aspect ratio
             var scale = Math.min(width / img.width, height / img.height);
             img.scale(scale);
@@ -94,8 +107,11 @@ var ProductEditor = function (_a) {
             img.set({
                 left: (width - img.width * scale) / 2,
                 top: (height - img.height * scale) / 2,
+                selectable: false,
+                evented: false, // template image is not responsive to events
             });
             fabricCanvas.add(img);
+            fabricCanvas.sendToBack(img); // ensure the template is on the bottom
             // Redraw grid to ensure it's on top
             if (hasGrid && showGrid) {
                 (0, EditorGrid_1.drawGrid)(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
@@ -103,14 +119,11 @@ var ProductEditor = function (_a) {
             fabricCanvas.renderAll();
         });
     };
-    var handleSave = function () {
-        if (!canvas)
-            return;
-        var dataUrl = canvas.toDataURL({
-            format: 'png',
-            quality: 1,
-        });
-        onSave === null || onSave === void 0 ? void 0 : onSave(dataUrl);
+    // handle upload image
+    var handleUploadImage = function () {
+        if (canvas) {
+            (0, ImageHandler_1.uploadImage)(canvas, width, height, onSave);
+        }
     };
     var handleTemplateChange = function (template) {
         if (!canvas)
@@ -126,19 +139,29 @@ var ProductEditor = function (_a) {
     var disableCanvasEvents = function (e) {
         e.stopPropagation();
     };
+    // Add handleAddText function before the return statement
+    var handleAddText = function () {
+        if (!canvas)
+            return;
+        (0, AddText_1.addText)(canvas, width, height);
+    };
     // Create toolbar content
     var renderToolbarContent = function () { return (react_1.default.createElement(react_1.default.Fragment, null,
         react_1.default.createElement("div", { className: "toolbar-content" },
-            react_1.default.createElement("div", { className: "toolbar-button" },
+            react_1.default.createElement("div", { className: "toolbar-button", onClick: handleUploadImage },
                 react_1.default.createElement(react_icons_1.ImageIcon, { width: 24, height: 24 }),
-                react_1.default.createElement("span", null, "Upload Image")),
-            react_1.default.createElement("div", { className: "toolbar-button" },
-                react_1.default.createElement(react_icons_1.TextIcon, { width: 24, height: 24 }),
-                react_1.default.createElement("span", null, "Add Text"))),
+                react_1.default.createElement("span", null, "Upload Image"))),
         react_1.default.createElement("div", { className: "grid-toggle" },
             react_1.default.createElement("div", { className: "toolbar-button ".concat(showGrid ? 'active' : ''), onClick: toggleGrid },
-                react_1.default.createElement(react_icons_1.DashboardIcon, { width: 24, height: 24 }),
-                react_1.default.createElement("span", null, showGrid ? 'Hide Grid' : 'Show Grid'))))); };
+                react_1.default.createElement(grommet_icons_1.Apps, { width: 24, height: 24 }),
+                react_1.default.createElement("span", null, showGrid ? 'Hide Grid' : 'Show Grid'))),
+        react_1.default.createElement("div", { className: "toolbar-content" },
+            react_1.default.createElement("div", { className: "toolbar-button" },
+                react_1.default.createElement(grommet_icons_1.Undo, { width: 24, height: 24 }),
+                react_1.default.createElement("span", null, "Undo")),
+            react_1.default.createElement("div", { className: "toolbar-button", onClick: handleAddText },
+                react_1.default.createElement(grommet_icons_1.Redo, { width: 24, height: 24 }),
+                react_1.default.createElement("span", null, "Redo"))))); };
     return (react_1.default.createElement("div", { className: "product-editor" },
         product.draftTemplates && product.draftTemplates.length > 0 && (react_1.default.createElement("div", { className: "template-buttons" }, product.draftTemplates.map(function (template) { return (react_1.default.createElement("div", { key: template.id, className: "template-button ".concat((selectedTemplate === null || selectedTemplate === void 0 ? void 0 : selectedTemplate.id) === template.id ? 'selected' : ''), onClick: function () { return handleTemplateChange(template); } },
             react_1.default.createElement("span", { className: "template-name" }, template.name || "Template ".concat(template.id)))); }))),

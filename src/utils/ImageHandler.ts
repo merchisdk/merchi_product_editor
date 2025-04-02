@@ -58,26 +58,21 @@ export const uploadImage = (
 
               canvas.add(img);
               canvas.setActiveObject(img);
-              // Comment out the renderAll call that might be causing the error
-              // canvas.renderAll();
+              canvas.renderAll();
 
               if (onImageAdded) {
                 try {
-                  // Comment out dataUrl generation which also uses the canvas
-                  // const dataUrl = canvas.toDataURL({
-                  //   format: 'png',
-                  //   quality: 1,
-                  // });
-                  // onImageAdded(dataUrl);
-
-                  // Instead, let's just call the callback without the dataUrl
-                  // to prevent the error temporarily
-                  onImageAdded('');
+                  const dataUrl = canvas.toDataURL({
+                    format: 'png',
+                    quality: 1,
+                  });
+                  onImageAdded(dataUrl);
                 } catch (err) {
                   console.warn('Failed to export dataUrl', err);
                 }
               }
             },
+            { crossOrigin: 'anonymous' }
           );
         }
       };
@@ -104,20 +99,14 @@ export const setupKeyboardEvents = (
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
         canvas.remove(activeObject);
-        // Comment out the renderAll call that might be causing the error
-        // canvas.renderAll();
+        canvas.renderAll();
 
         if (onObjectRemoved) {
-          // Comment out dataUrl generation which also uses the canvas
-          // const dataUrl = canvas.toDataURL({
-          //   format: 'png',
-          //   quality: 1,
-          // });
-          // onObjectRemoved(dataUrl);
-
-          // Instead, let's just call the callback without the dataUrl
-          // to prevent the error temporarily
-          onObjectRemoved('');
+          const dataUrl = canvas.toDataURL({
+            format: 'png',
+            quality: 1,
+          });
+          onObjectRemoved(dataUrl);
         }
       }
     }
