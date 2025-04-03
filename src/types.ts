@@ -215,12 +215,3 @@ export interface Job {
   variationsGroups?: VariationsGroup[];
   variations?: Variation[];
 } 
-
-export interface ProductEditorProps {
-  job: Job;
-  product: Product;
-  width?: number;
-  height?: number;
-  onSave?: (editedImage: string) => void;
-  onCancel?: () => void;
-}

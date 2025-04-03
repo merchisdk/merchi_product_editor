@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { fabric } from 'fabric';
 import { Product, Job } from '../types';
 
@@ -9,17 +9,15 @@ interface ProductEditorContextType {
   setSelectedTemplate: (template: string) => void;
   showGrid: boolean;
   setShowGrid: (show: boolean) => void;
-  undoStack: fabric.Object[][];
-  setUndoStack: (stack: fabric.Object[][]) => void;
-  redoStack: fabric.Object[][];
-  setRedoStack: (stack: fabric.Object[][]) => void;
+  product: Product;
+  job: Job;
+  width: number;
+  height: number;
   handleUndo: () => void;
   handleRedo: () => void;
   handleUploadImage: (file: File) => void;
   handleSave: () => void;
   handleCancel: () => void;
-  product: Product;
-  job: Job;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -28,14 +26,18 @@ interface ProductEditorProviderProps {
   children: React.ReactNode;
   product: Product;
   job: Job;
-  onSave?: (editedImage: string) => void;
-  onCancel?: () => void;
+  width?: number;
+  height?: number;
+  onSave: () => void;
+  onCancel: () => void;
 }
 
 export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   children,
   product,
   job,
+  width = 800,
+  height = 600,
   onSave,
   onCancel,
 }) => {
@@ -44,98 +46,77 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     product.draftTemplates?.[0]?.id?.toString() || ''
   );
   const [showGrid, setShowGrid] = useState(false);
-  const [undoStack, setUndoStack] = useState<fabric.Object[][]>([]);
-  const [redoStack, setRedoStack] = useState<fabric.Object[][]>([]);
 
-  const handleUndo = useCallback(() => {
-    if (undoStack.length === 0 || !canvas) return;
+  const handleUndo = () => {
+    if (canvas) {
+      canvas.undo();
+    }
+  };
 
-    const previousState = undoStack[undoStack.length - 1];
-    const currentState = canvas.getObjects();
-    
-    setRedoStack([...redoStack, currentState]);
-    setUndoStack(undoStack.slice(0, -1));
-    
-    canvas.clear();
-    previousState.forEach(obj => canvas.add(obj));
-    canvas.renderAll();
-  }, [canvas, undoStack, redoStack]);
+  const handleRedo = () => {
+    if (canvas) {
+      canvas.redo();
+    }
+  };
 
-  const handleRedo = useCallback(() => {
-    if (redoStack.length === 0 || !canvas) return;
-
-    const nextState = redoStack[redoStack.length - 1];
-    const currentState = canvas.getObjects();
-    
-    setUndoStack([...undoStack, currentState]);
-    setRedoStack(redoStack.slice(0, -1));
-    
-    canvas.clear();
-    nextState.forEach(obj => canvas.add(obj));
-    canvas.renderAll();
-  }, [canvas, undoStack, redoStack]);
-
-  const handleUploadImage = useCallback(async (file: File) => {
+  const handleUploadImage = (file: File) => {
     if (!canvas) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      fabric.Image.fromURL(e.target?.result as string, (img) => {
-        // Center the image on the canvas
+      const img = new Image();
+      img.onload = () => {
+        const fabricImage = new fabric.Image(img);
         const scale = Math.min(
-          canvas.width! / img.width!,
-          canvas.height! / img.height!
+          width / img.width,
+          height / img.height
         );
-        img.scale(scale);
-        img.set({
-          left: (canvas.width! - img.width! * scale) / 2,
-          top: (canvas.height! - img.height! * scale) / 2,
+        fabricImage.scale(scale);
+        fabricImage.set({
+          left: (width - img.width * scale) / 2,
+          top: (height - img.height * scale) / 2,
         });
-
-        // Save current state for undo
-        setUndoStack([...undoStack, canvas.getObjects()]);
-        setRedoStack([]);
-
-        canvas.clear();
-        canvas.add(img);
+        canvas.add(fabricImage);
         canvas.renderAll();
-      });
+      };
+      img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
-  }, [canvas, undoStack]);
+  };
 
-  const handleSave = useCallback(() => {
-    if (!canvas) return;
-    const dataUrl = canvas.toDataURL();
-    onSave?.(dataUrl);
-  }, [canvas, onSave]);
+  const handleSave = () => {
+    if (canvas) {
+      const dataUrl = canvas.toDataURL();
+      // Here you would typically send the dataUrl to your backend
+      console.log('Saving canvas:', dataUrl);
+      onSave();
+    }
+  };
 
-  const handleCancel = useCallback(() => {
-    onCancel?.();
-  }, [onCancel]);
-
-  const value = {
-    canvas,
-    setCanvas,
-    selectedTemplate,
-    setSelectedTemplate,
-    showGrid,
-    setShowGrid,
-    undoStack,
-    setUndoStack,
-    redoStack,
-    setRedoStack,
-    handleUndo,
-    handleRedo,
-    handleUploadImage,
-    handleSave,
-    handleCancel,
-    product,
-    job,
+  const handleCancel = () => {
+    onCancel();
   };
 
   return (
-    <ProductEditorContext.Provider value={value}>
+    <ProductEditorContext.Provider
+      value={{
+        canvas,
+        setCanvas,
+        selectedTemplate,
+        setSelectedTemplate,
+        showGrid,
+        setShowGrid,
+        product,
+        job,
+        width,
+        height,
+        handleUndo,
+        handleRedo,
+        handleUploadImage,
+        handleSave,
+        handleCancel,
+      }}
+    >
       {children}
     </ProductEditorContext.Provider>
   );
@@ -147,4 +128,4 @@ export const useProductEditor = () => {
     throw new Error('useProductEditor must be used within a ProductEditorProvider');
   }
   return context;
-}; 
+};

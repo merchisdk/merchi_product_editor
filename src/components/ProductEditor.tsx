@@ -1,24 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import { fabric } from 'fabric';
-import { ProductEditorProps } from '../types';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { Toolbar } from './Toolbar';
 import './ProductEditor.css';
 
-export const ProductEditor: React.FC<ProductEditorProps> = ({
-  product,
-  job,
-  width = 800,
-  height = 600,
-  onSave,
-  onCancel,
-}) => {
+export const ProductEditor: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const {
     canvas,
     setCanvas,
     selectedTemplate,
-    setSelectedTemplate,
+    product,
+    job,
+    width = 800,
+    height = 600,
     showGrid,
     setShowGrid,
     handleUndo,
