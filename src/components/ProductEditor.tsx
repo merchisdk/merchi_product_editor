@@ -101,29 +101,25 @@ export const ProductEditor: React.FC<ProductEditorProps> = ({
 
   return (
     <div className="product-editor">
-      <Toolbar />
-      <div className="canvas-container">
-        <canvas ref={canvasRef} />
-        <input
-          type="file"
-          id="image-upload"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              handleUploadImage(file);
-            }
-          }}
-        />
-      </div>
-      <div className="button-container">
-        <button onClick={handleSave} className="save-button">
-          Save
-        </button>
-        <button onClick={handleCancel} className="cancel-button">
-          Cancel
-        </button>
+      <div className="main-editor-layout">
+        <Toolbar />
+        <div className="editor-container">
+          <div className="canvas-container">
+            <canvas ref={canvasRef} />
+            {/* <input
+              type="file"
+              id="image-upload"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleUploadImage(file);
+                }
+              }}
+            /> */}
+          </div>
+        </div>
       </div>
     </div>
   );

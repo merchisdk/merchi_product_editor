@@ -4,7 +4,7 @@ import { Product, Job } from '../types';
 
 interface ProductEditorContextType {
   canvas: fabric.Canvas | null;
-  setCanvas: (canvas: fabric.Canvas) => void;
+  setCanvas: (canvas: fabric.Canvas | null) => void;
   selectedTemplate: string;
   setSelectedTemplate: (template: string) => void;
   showGrid: boolean;
@@ -52,10 +52,10 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     const previousState = undoStack[undoStack.length - 1];
     const currentState = canvas.getObjects();
-    
+
     setRedoStack([...redoStack, currentState]);
     setUndoStack(undoStack.slice(0, -1));
-    
+
     canvas.clear();
     previousState.forEach(obj => canvas.add(obj));
     canvas.renderAll();
@@ -66,10 +66,10 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     const nextState = redoStack[redoStack.length - 1];
     const currentState = canvas.getObjects();
-    
+
     setUndoStack([...undoStack, currentState]);
     setRedoStack(redoStack.slice(0, -1));
-    
+
     canvas.clear();
     nextState.forEach(obj => canvas.add(obj));
     canvas.renderAll();

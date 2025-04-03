@@ -214,7 +214,7 @@ export interface Job {
   domain?: Domain;
   variationsGroups?: VariationsGroup[];
   variations?: Variation[];
-} 
+}
 
 export interface ProductEditorProps {
   job: Job;
