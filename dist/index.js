@@ -20,5 +20,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductEditor = void 0;
 var ProductEditor_1 = require("./components/ProductEditor");
 Object.defineProperty(exports, "ProductEditor", { enumerable: true, get: function () { return __importDefault(ProductEditor_1).default; } });
+__exportStar(require("./components/EditorGrid"), exports);
 __exportStar(require("./types"), exports);
 require("./styles.css");

@@ -31,4 +31,6 @@ export interface ProductEditorProps {
   height?: number;
   onSave?: (editedImage: string) => void;
   onCancel?: () => void;
+  /** PSD template URL, for generating preview */
+  psdTemplateUrl?: string;
 } 

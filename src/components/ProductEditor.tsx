@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import { ProductEditorProps, DraftTemplate } from '../types';
-import { TextIcon, ImageIcon, DashboardIcon } from '@radix-ui/react-icons';
 import { drawGrid, saveGridState, clearCanvasExceptGrid } from './EditorGrid';
+import { addText } from '../utils/AddText';
+import { uploadImage, setupKeyboardEvents } from '../utils/ImageHandler';
+import { Redo, Undo, Apps } from "grommet-icons";
+import { ImageIcon } from '@radix-ui/react-icons';
+import PreviewPanel from './PreviewPanel';
 
 const ProductEditor: React.FC<ProductEditorProps> = ({
   product,
@@ -10,11 +14,28 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
   height = 600,
   onSave,
   onCancel,
+  psdTemplateUrl
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<DraftTemplate | null>(null);
   const [showGrid, setShowGrid] = useState<boolean>(false);
+  const [isMobileView, setIsMobileView] = useState<boolean>(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  // Check if we're on a small screen
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const updateViewMode = () => {
+        setIsMobileView(window.innerWidth < 480);
+      }
+
+      updateViewMode();
+      window.addEventListener('resize', updateViewMode);
+
+      return () => window.removeEventListener('resize', updateViewMode);
+    }
+  }, []);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -37,6 +58,19 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
 
       // Draw grid after loading the template
       drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
+
+      // setup keyboard delete event
+      const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvas, (dataUrl) => {
+        onSave && onSave(dataUrl);
+        setPreviewImageUrl(null); // clear preview, because the image is deleted
+      });
+
+      return () => {
+        cleanupKeyboardEvents();
+        if (fabricCanvas) {
+          fabricCanvas.dispose();
+        }
+      };
     }
 
     return () => {
@@ -44,7 +78,7 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
         canvas.dispose();
       }
     };
-  }, [product, width, height]);
+  }, [product, width, height, onSave]);
 
   // draw grid when the grid state or canvas size changes
   useEffect(() => {
@@ -63,47 +97,62 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
     // clear all objects except the grid
     clearCanvasExceptGrid(fabricCanvas);
 
-    fabric.Image.fromURL(template.file.url, (img: fabric.Image) => {
-      // Scale image to fit canvas while maintaining aspect ratio
-      const scale = Math.min(
-        width / img.width!,
-        height / img.height!
-      );
-      img.scale(scale);
+    fabric.Image.fromURL(
+      template.file.url,
+      (img: fabric.Image) => {
+        if (!fabricCanvas) return;
 
-      // Center the image
-      img.set({
-        left: (width - img.width! * scale) / 2,
-        top: (height - img.height! * scale) / 2,
+        // Scale image to fit canvas while maintaining aspect ratio
+        const scale = Math.min(
+          width / img.width!,
+          height / img.height!
+        );
+        img.scale(scale);
+
+        // Center the image
+        img.set({
+          left: (width - img.width! * scale) / 2,
+          top: (height - img.height! * scale) / 2,
+          selectable: false, // template image is not selectable
+          evented: false,    // template image is not responsive to events
+        });
+
+        fabricCanvas.add(img);
+        fabricCanvas.sendToBack(img); // ensure the template is on the bottom
+
+        // Redraw grid to ensure it's on top
+        if (hasGrid && showGrid) {
+          drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
+        }
+
+        fabricCanvas.renderAll();
       });
-
-      fabricCanvas.add(img);
-
-      // Redraw grid to ensure it's on top
-      if (hasGrid && showGrid) {
-        drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
-      }
-
-      fabricCanvas.renderAll();
-    });
   };
 
-  const handleSave = () => {
-    if (!canvas) return;
+  // handle preview generation
+  const handlePreviewGenerated = (previewDataUrl: string) => {
+    setPreviewImageUrl(previewDataUrl);
+  };
 
-    const dataUrl = canvas.toDataURL({
-      format: 'png',
-      quality: 1,
-    });
-
-    onSave?.(dataUrl);
+  // handle upload image
+  const handleUploadImage = () => {
+    if (canvas) {
+      uploadImage(
+        canvas,
+        width,
+        height,
+        onSave,
+        psdTemplateUrl ? handlePreviewGenerated : undefined,
+        psdTemplateUrl
+      );
+    }
   };
 
   const handleTemplateChange = (template: DraftTemplate) => {
     if (!canvas) return;
-
     setSelectedTemplate(template);
     loadTemplateImage(canvas, template);
+    setPreviewImageUrl(null);
   };
 
   // toggle grid visibility
@@ -115,6 +164,49 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
   const disableCanvasEvents = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  // Add handleAddText function before the return statement
+  const handleAddText = () => {
+    if (!canvas) return;
+    addText(canvas, width, height);
+  };
+
+  // Create toolbar content
+  const renderToolbarContent = () => (
+    <>
+      <div className="toolbar-content">
+        <div className="toolbar-button" onClick={handleUploadImage}>
+          <ImageIcon width={24} height={24} />
+          <span>Upload Image</span>
+        </div>
+        {/* <div className="toolbar-button" onClick={handleAddText}>
+          <TextIcon width={24} height={24} />
+          <span>Add Text</span>
+        </div> */}
+      </div>
+      {/* Grid toggle button */}
+      <div className="grid-toggle">
+        <div
+          className={`toolbar-button ${showGrid ? 'active' : ''}`}
+          onClick={toggleGrid}
+        >
+          <Apps width={24} height={24} />
+          <span>{showGrid ? 'Hide Grid' : 'Show Grid'}</span>
+        </div>
+      </div>
+      {/* Redo and Undo buttons */}
+      <div className="toolbar-content">
+        <div className="toolbar-button">
+          <Undo width={24} height={24} />
+          <span>Undo</span>
+        </div>
+        <div className="toolbar-button" onClick={handleAddText}>
+          <Redo width={24} height={24} />
+          <span>Redo</span>
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <div className="product-editor">
@@ -134,30 +226,19 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
       )}
 
       <div className="main-editor-layout">
-        {/* Left toolbar */}
-        <div className="left-toolbar">
-          <div className="toolbar-content">
-            <div className="toolbar-button">
-              <ImageIcon width={24} height={24} />
-              <span>Upload Image</span>
-            </div>
-            <div className="toolbar-button">
-              <TextIcon width={24} height={24} />
-              <span>Add Text</span>
-            </div>
+        {/* Show left toolbar only in desktop view */}
+        {!isMobileView && (
+          <div className={`left-toolbar ${previewImageUrl ? 'left-toolbar-with-preview' : ''}`}>
+            {renderToolbarContent()}
+            {/* show PSD preview */}
+            {previewImageUrl && (
+              <PreviewPanel
+                previewImageUrl={previewImageUrl}
+                title="Design Preview"
+              />
+            )}
           </div>
-
-          {/* Grid toggle button */}
-          <div className="grid-toggle">
-            <div
-              className={`toolbar-button ${showGrid ? 'active' : ''}`}
-              onClick={toggleGrid}
-            >
-              <DashboardIcon width={24} height={24} />
-              <span>{showGrid ? 'Hide Grid' : 'Show Grid'}</span>
-            </div>
-          </div>
-        </div>
+        )}
 
         <div className="editor-container">
           {/* Canvas area */}
@@ -166,6 +247,21 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Show bottom toolbar only in mobile view */}
+      {isMobileView && (
+        <div className="bottom-toolbar">
+          {renderToolbarContent()}
+        </div>
+      )}
+
+      {/* In mobile view, show preview panel below the editor if have a preview */}
+      {isMobileView && previewImageUrl && (
+        <PreviewPanel
+          previewImageUrl={previewImageUrl}
+          title="Design Preview"
+        />
+      )}
     </div>
   );
 };
