@@ -202,6 +202,56 @@
   font-weight: 600;
 }
 
+/* Preview Panel styles */
+.preview-panel {
+  width: 100%;
+  margin-top: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.preview-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  text-align: center;
+}
+
+.preview-image-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
+/* Extend left toolbar for preview */
+.left-toolbar-with-preview {
+  width: 120px;
+  min-height: 300px;
+}
+
+@media (max-width: 480px) {
+  .preview-panel {
+    margin-top: 0.5rem;
+  }
+
+  .preview-image {
+    max-height: 100px;
+  }
+}
+
 /* Canvas area */
 .canvas-area {
   display: flex;

@@ -1,29 +1,34 @@
 import { fabric } from 'fabric';
+import { generatePsdPreview, loadPsdFromUrl } from './PsdPreviewGenerator';
 
 /**
  * uploadImage
  * @param canvas
  * @param width
  * @param height
- * @param onImageAdded
+ * @param onImageAdded 
+ * @param onPreviewGenerated 
+ * @param psdTemplateUrl
  */
 export const uploadImage = (
   canvas: fabric.Canvas,
   width: number,
   height: number,
-  onImageAdded?: (dataUrl: string) => void
+  onImageAdded?: (dataUrl: string) => void,
+  onPreviewGenerated?: (previewDataUrl: string) => void,
+  psdTemplateUrl?: string
 ) => {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
 
-  input.onchange = (e: Event) => {
+  input.onchange = async (e: Event) => {
     const target = e.target as HTMLInputElement;
     if (target.files && target.files[0] && canvas) {
       const file = target.files[0];
       const reader = new FileReader();
 
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         if (event.target?.result && canvas) {
           const imgUrl = event.target.result as string;
 
@@ -59,6 +64,25 @@ export const uploadImage = (
               canvas.add(img);
               canvas.setActiveObject(img);
               canvas.renderAll();
+
+              if (psdTemplateUrl && onPreviewGenerated) {
+                try {
+                  loadPsdFromUrl(psdTemplateUrl)
+                    .then(psdBuffer => {
+                      return generatePsdPreview(psdBuffer, imgUrl);
+                    })
+                    .then(previewDataUrl => {
+                      if (onPreviewGenerated) {
+                        onPreviewGenerated(previewDataUrl);
+                      }
+                    })
+                    .catch(error => {
+                      console.error('Failed to generate PSD preview:', error);
+                    });
+                } catch (error) {
+                  console.error('Failed to process preview:', error);
+                }
+              }
 
               if (onImageAdded) {
                 try {

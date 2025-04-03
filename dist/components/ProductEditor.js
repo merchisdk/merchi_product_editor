@@ -37,6 +37,7 @@ var ProductEditor = function (_a) {
     var _e = (0, react_1.useState)(null), selectedTemplate = _e[0], setSelectedTemplate = _e[1];
     var _f = (0, react_1.useState)(false), showGrid = _f[0], setShowGrid = _f[1];
     var _g = (0, react_1.useState)(false), isMobileView = _g[0], setIsMobileView = _g[1];
+    var _h = (0, react_1.useState)(false), canvasInitialized = _h[0], setCanvasInitialized = _h[1];
     // Check if we're on a small screen
     (0, react_1.useEffect)(function () {
         if (typeof window !== 'undefined') {
@@ -48,40 +49,62 @@ var ProductEditor = function (_a) {
             return function () { return window.removeEventListener('resize', updateViewMode_1); };
         }
     }, []);
+    // 使用useLayoutEffect确保在DOM更新后同步执行
+    (0, react_1.useLayoutEffect)(function () {
+        // 确保canvas元素已经准备好并且只初始化一次
+        if (canvasRef.current && !canvasInitialized) {
+            try {
+                var fabricCanvas = new fabric_1.fabric.Canvas(canvasRef.current, {
+                    width: width,
+                    height: height,
+                    backgroundColor: '#ffffff',
+                });
+                setCanvas(fabricCanvas);
+                setCanvasInitialized(true);
+                // 初始化后的其他操作会由下面的useEffect处理
+            }
+            catch (err) {
+                console.error('Error initializing canvas:', err);
+            }
+        }
+        return function () {
+            // 这里只处理组件卸载时的清理，不处理canvas的重新创建
+            if (canvas && !canvasInitialized) {
+                canvas.dispose();
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canvasInitialized]); // 只依赖于canvas是否已初始化
+    // 负责处理canvas的内容和功能
     (0, react_1.useEffect)(function () {
         var _a;
-        if (canvasRef.current) {
-            var fabricCanvas_1 = new fabric_1.fabric.Canvas(canvasRef.current, {
-                width: width,
-                height: height,
-                backgroundColor: '#ffffff',
-            });
-            setCanvas(fabricCanvas_1);
-            // If there are draft templates, use the first one as default
+        if (canvas && canvasInitialized) {
+            // 如果有模板，加载第一个
             if (product.draftTemplates && product.draftTemplates.length > 0) {
                 var template = product.draftTemplates[0];
                 setSelectedTemplate(template);
                 if ((_a = template.file) === null || _a === void 0 ? void 0 : _a.url) {
-                    loadTemplateImage(fabricCanvas_1, template);
+                    loadTemplateImage(canvas, template);
                 }
             }
             // Draw grid after loading the template
-            (0, EditorGrid_1.drawGrid)(fabricCanvas_1, width, height, 20, '#a0a0a0', showGrid);
+            (0, EditorGrid_1.drawGrid)(canvas, width, height, 20, '#a0a0a0', showGrid);
             // setup keyboard delete event
-            var cleanupKeyboardEvents_1 = (0, ImageHandler_1.setupKeyboardEvents)(fabricCanvas_1, onSave);
+            var cleanupKeyboardEvents_1 = (0, ImageHandler_1.setupKeyboardEvents)(canvas, onSave);
             return function () {
                 cleanupKeyboardEvents_1();
-                if (fabricCanvas_1) {
-                    fabricCanvas_1.dispose();
-                }
+                // 注意：不在这里dispose canvas，而是在组件卸载时
             };
         }
+    }, [product, width, height, onSave, canvas, canvasInitialized]);
+    // 组件卸载时清理
+    (0, react_1.useEffect)(function () {
         return function () {
             if (canvas) {
                 canvas.dispose();
             }
         };
-    }, [product, width, height, onSave]);
+    }, [canvas]);
     // draw grid when the grid state or canvas size changes
     (0, react_1.useEffect)(function () {
         if (canvas) {

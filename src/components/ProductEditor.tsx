@@ -6,6 +6,7 @@ import { addText } from '../utils/AddText';
 import { uploadImage, setupKeyboardEvents } from '../utils/ImageHandler';
 import { Redo, Undo, Apps } from "grommet-icons";
 import { ImageIcon } from '@radix-ui/react-icons';
+import PreviewPanel from './PreviewPanel';
 
 const ProductEditor: React.FC<ProductEditorProps> = ({
   product,
@@ -13,12 +14,14 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
   height = 600,
   onSave,
   onCancel,
+  psdTemplateUrl
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<DraftTemplate | null>(null);
   const [showGrid, setShowGrid] = useState<boolean>(false);
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Check if we're on a small screen
   useEffect(() => {
@@ -57,7 +60,10 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
       drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
 
       // setup keyboard delete event
-      const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvas, onSave);
+      const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvas, (dataUrl) => {
+        onSave && onSave(dataUrl);
+        setPreviewImageUrl(null); // clear preview, because the image is deleted
+      });
 
       return () => {
         cleanupKeyboardEvents();
@@ -123,10 +129,22 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
       });
   };
 
+  // handle preview generation
+  const handlePreviewGenerated = (previewDataUrl: string) => {
+    setPreviewImageUrl(previewDataUrl);
+  };
+
   // handle upload image
   const handleUploadImage = () => {
     if (canvas) {
-      uploadImage(canvas, width, height, onSave);
+      uploadImage(
+        canvas,
+        width,
+        height,
+        onSave,
+        psdTemplateUrl ? handlePreviewGenerated : undefined,
+        psdTemplateUrl
+      );
     }
   };
 
@@ -134,6 +152,7 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
     if (!canvas) return;
     setSelectedTemplate(template);
     loadTemplateImage(canvas, template);
+    setPreviewImageUrl(null);
   };
 
   // toggle grid visibility
@@ -209,8 +228,15 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
       <div className="main-editor-layout">
         {/* Show left toolbar only in desktop view */}
         {!isMobileView && (
-          <div className="left-toolbar">
+          <div className={`left-toolbar ${previewImageUrl ? 'left-toolbar-with-preview' : ''}`}>
             {renderToolbarContent()}
+            {/* show PSD preview */}
+            {previewImageUrl && (
+              <PreviewPanel
+                previewImageUrl={previewImageUrl}
+                title="Design Preview"
+              />
+            )}
           </div>
         )}
 
@@ -227,6 +253,14 @@ const ProductEditor: React.FC<ProductEditorProps> = ({
         <div className="bottom-toolbar">
           {renderToolbarContent()}
         </div>
+      )}
+
+      {/* In mobile view, show preview panel below the editor if have a preview */}
+      {isMobileView && previewImageUrl && (
+        <PreviewPanel
+          previewImageUrl={previewImageUrl}
+          title="Design Preview"
+        />
       )}
     </div>
   );
