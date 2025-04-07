@@ -1,9 +1,9 @@
 import React from 'react';
-import { DraftTemplate, ProductEditorProps } from '../types';
-import { useProductEditor } from '../context/ProductEditorContext';
+import { Product, Variation, Job } from '../types';
+import { ProductEditorProvider, useProductEditor } from '../context/ProductEditorContext';
 import Toolbar from './Toolbar';
 
-const ProductEditor: React.FC<ProductEditorProps> = () => {
+const Product: React.FC = () => {
   const {
     canvasRef,
     draftTemplates,
@@ -75,6 +75,26 @@ const ProductEditor: React.FC<ProductEditorProps> = () => {
         />
       )} */}
     </div>
+  );
+};
+
+interface ProductEditorProps {
+  children: React.ReactNode;
+  product: Product;
+  width?: number;
+  height?: number;
+  job: Job;
+  onSave: () => void;
+  onCancel: () => void;
+  variations: Variation[];
+  groupVariations: Variation[];
+}
+
+const ProductEditor: React.FC<ProductEditorProps> = (props) => {
+  return (
+    <ProductEditorProvider {...props}>
+      <Product />
+    </ProductEditorProvider>
   );
 };
 
