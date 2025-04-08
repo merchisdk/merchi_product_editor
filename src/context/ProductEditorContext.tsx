@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { fabric } from 'fabric';
 import { Product, Job, DraftTemplate, Variation } from '../types';
 import { drawGrid, saveGridState, clearCanvasExceptGrid } from '../utils/grid';
-import { addVariationsToCanvas, initDraftTemplates } from '../utils/job';
+import { addVariationsToCanvas, initDraftTemplates, buildVariationFieldCanvasObject } from '../utils/job';
 import { setupKeyboardEvents } from '../utils/ImageHandler';
 
 interface ProductEditorContextType {
@@ -24,6 +24,8 @@ interface ProductEditorContextType {
   handleTemplateChange: (draftTemplate: DraftTemplate) => void;
   handleSave: () => void;
   handleCancel: () => void;
+  canvasObjects: Map<string, fabric.Object>;
+  updateCanvasFromVariations: (newVariations: Variation[], newGroupVariations?: Variation[]) => void;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -61,10 +63,51 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   ] = useState(initDraftTemplates(allVariations, product));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+  const [canvasObjects, setCanvasObjects] = useState<Map<string, fabric.Object>>(new Map());
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(
     draftTemplates?.[0]?.template?.id || null
   );
   const [showGrid, setShowGrid] = useState(false);
+
+  // Initialize canvas objects from variations
+  useEffect(() => {
+    if (!canvas) return;
+    
+    const newObjects = new Map<string, fabric.Object>();
+    allVariations.forEach(variation => {
+      const objectData = buildVariationFieldCanvasObject(variation);
+      const fieldId = objectData.fieldId;
+      if (!fieldId) return;
+      
+      let fabricObject: fabric.Object;
+      
+      if (objectData.canvasObjectType === 'text') {
+        fabricObject = new fabric.Text(objectData.text || '', {
+          fontSize: objectData.fontSize,
+          fontFamily: objectData.fontFamily
+        });
+      } else if (objectData.canvasObjectType === 'image' && objectData.files?.[0]?.viewUrl) {
+        fabric.Image.fromURL(objectData.files[0].viewUrl, (img) => {
+          if (img) {
+            newObjects.set(fieldId.toString(), img);
+            setCanvasObjects(new Map(newObjects));
+          }
+        });
+        return;
+      } else if (objectData.canvasObjectType === 'colour' && objectData.colour) {
+        fabricObject = new fabric.Rect({
+          fill: objectData.colour,
+          width: 50,
+          height: 50
+        });
+      } else {
+        return;
+      }
+      
+      newObjects.set(fieldId.toString(), fabricObject);
+    });
+    setCanvasObjects(newObjects);
+  }, [canvas, variations, groupVariations]);
 
   const handleSave = () => {
     if (canvas) {
@@ -202,6 +245,56 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       drawGrid(canvas, width, height, 20, '#a0a0a0', showGrid);
     }
   }, [showGrid, width, height, canvas]);
+
+  // Function to update a canvas object when a variation changes
+  const updateCanvasObject = (variation: Variation) => {
+    const objectData = buildVariationFieldCanvasObject(variation);
+    const fieldId = objectData.fieldId;
+    if (!fieldId || !canvas) return;
+
+    const existingObject = canvasObjects.get(fieldId.toString());
+    if (existingObject) {
+      if (objectData.canvasObjectType === 'text' && existingObject instanceof fabric.Text) {
+        existingObject.set({
+          text: objectData.text || '',
+          fontSize: objectData.fontSize,
+          fontFamily: objectData.fontFamily,
+        });
+      } else if (objectData.canvasObjectType === 'colour' && existingObject instanceof fabric.Rect && objectData.colour) {
+        existingObject.set({
+          fill: objectData.colour,
+        });
+      }
+      // Add more conditions if needed for other object types
+
+      canvas.renderAll(); // Re-render the canvas to apply changes
+    }
+  };
+  
+  // Function to check for changed variations and update canvas objects
+  const updateCanvasFromVariations = (newVariations: Variation[], newGroupVariations: Variation[] = []) => {
+    if (!canvas) return;
+    
+    // Combine all variations
+    const newAllVariations = product?.groupVariationFields?.length
+      ? [...newVariations, ...newGroupVariations]
+      : [...newVariations];
+      
+    // Process each variation to find changes
+    newAllVariations.forEach(newVariation => {
+      // Find corresponding old variation to check if it changed
+      const oldVariation = allVariations.find(v => 
+        v.variationField?.id === newVariation.variationField?.id
+      );
+      
+      // Update the canvas if the variation is new or has changed
+      if (!oldVariation || oldVariation.value !== newVariation.value || 
+          JSON.stringify(oldVariation.variationFiles || []) !== JSON.stringify(newVariation.variationFiles || [])) {
+        updateCanvasObject(newVariation);
+      }
+    });
+  };
+
   return (
     <ProductEditorContext.Provider
       value={{
@@ -231,6 +324,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         handleTemplateChange,
         handleSave,
         handleCancel: () => onCancel(),
+        canvasObjects,
+        updateCanvasFromVariations,
       }}
     >
       {children}
