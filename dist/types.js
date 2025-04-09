@@ -14,4 +14,4 @@ var FieldType;
     FieldType[FieldType["IMAGE_SELECT"] = 9] = "IMAGE_SELECT";
     FieldType[FieldType["COLOUR_PICKER"] = 10] = "COLOUR_PICKER";
     FieldType[FieldType["COLOUR_SELECT"] = 11] = "COLOUR_SELECT";
-})(FieldType || (exports.FieldType = FieldType = {}));
+})(FieldType = exports.FieldType || (exports.FieldType = {}));
