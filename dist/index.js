@@ -17,9 +17,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProductEditor = void 0;
+exports.ImageGallery = exports.ProductEditor = void 0;
 var ProductEditor_1 = require("./components/ProductEditor");
 Object.defineProperty(exports, "ProductEditor", { enumerable: true, get: function () { return __importDefault(ProductEditor_1).default; } });
+var ImageGallery_1 = require("./components/ImageGallery");
+Object.defineProperty(exports, "ImageGallery", { enumerable: true, get: function () { return __importDefault(ImageGallery_1).default; } });
 __exportStar(require("./utils/grid"), exports);
 __exportStar(require("./types"), exports);
 require("./styles/index.css");
