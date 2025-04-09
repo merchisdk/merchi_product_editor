@@ -3,29 +3,29 @@ import { motion, AnimatePresence } from "framer-motion";
 import ImageNavButton from "./ImageNavButton";
 import ImageZoomModal from "./ImageZoomModal";
 import { ZoomIn } from 'grommet-icons';
+import { useProductEditor } from '../context/ProductEditorContext';
 
 interface ImageGalleryProps {
-  imageUrl?: string;
-  productName?: string;
-  selectedImageIndex?: number;
-  totalImages?: number;
-  allImages?: { viewUrl: string }[];
+  fallbackImageUrl?: string;
 }
 
-const ImageGallery: React.FC<ImageGalleryProps> = ({
-  imageUrl = '',
-  productName = '',
-  selectedImageIndex = 0,
-  totalImages = 0,
-  allImages = []
-}) => {
+const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '' }) => {
+  const { product } = useProductEditor();
+  const { featureImage = null, images = [], name: productName = 'Loading...' } = product;
+  const _images = featureImage ? [featureImage, ...images] : images;
+  const allImages = _images.map(image => {
+    if (!image) return { viewUrl: '/blueman_white.png' };
+    return { viewUrl: image.viewUrl };
+  });
+  const totalImages = allImages.length;
   // image browser related states
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(selectedImageIndex);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState(
-    allImages[selectedImageIndex]?.viewUrl || imageUrl || '/blueman_white.png'
+    allImages[currentIndex]?.viewUrl || fallbackImageUrl || '/blueman_white.png'
   );
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     if (allImages && allImages.length > 0) {
       setCurrentImageUrl(allImages[currentIndex]?.viewUrl || '/blueman_white.png');
     }
-  }, [allImages, currentIndex, imageUrl]);
+  }, [allImages, currentIndex, fallbackImageUrl]);
 
   const handleNavigation = (newDirection: 'left' | 'right') => {
     if (!allImages || allImages.length <= 1) return;
@@ -167,4 +167,4 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   );
 };
 
-export default ImageGallery;
+export default ProductImageGallery;

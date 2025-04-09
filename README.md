@@ -127,31 +127,15 @@ The `useProductEditor` hook provides access to the following properties and meth
 
 ## ImageGallery Component
 
-The `ImageGallery` component provides a convenient way to display a collection of images that can be selected and used in your product designs.
-
-### Dog Images Gallery
-
-A special preset gallery of dog images is included for easy testing and demonstration:
+The `ImageGallery` component provides a simple way to display images in your product editor when other images fail to load.
 
 ```jsx
 import { ImageGallery } from 'merchi_product_editor';
 
-function DogGalleryExample() {
-  const { canvas } = useProductEditor();
-  
-  const handleImageSelect = (imageUrl) => {
-    // Add the selected dog image to the canvas
-    fabric.Image.fromURL(imageUrl, (img) => {
-      canvas.add(img);
-      canvas.renderAll();
-    });
-  };
-
+function Example() {
   return (
     <ImageGallery 
-      preset="dogs"
-      onSelect={handleImageSelect}
-      title="Choose a Dog"
+      fallbackImageUrl="https://example.com/default-image.jpg"
     />
   );
 }
@@ -161,11 +145,9 @@ function DogGalleryExample() {
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| preset | string | No | - | Predefined image collections (options: "dogs", "cats", "nature") |
-| images | string[] | No | [] | Array of custom image URLs to display |
-| onSelect | (imageUrl: string) => void | Yes | - | Callback when an image is selected |
-| title | string | No | "Image Gallery" | Title displayed at the top of the gallery |
-| columns | number | No | 3 | Number of columns in the gallery grid |
+| fallbackImageUrl | string | No | null | URL to an image that will be displayed when the primary image fails to load |
+
+The ImageGallery component is designed to be simple and focused on providing fallback functionality for image loading errors.
 
 ## Development
 

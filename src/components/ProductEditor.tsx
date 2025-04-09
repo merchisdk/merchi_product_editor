@@ -96,9 +96,7 @@ interface ProductEditorProps {
 
 const ProductEditor: React.FC<ProductEditorProps> = (props) => {
   return (
-    <ProductEditorProvider {...props}>
-      <Product />
-    </ProductEditorProvider>
+    <Product />
   );
 };
 
