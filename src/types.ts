@@ -28,7 +28,7 @@ export interface MerchiFile {
   viewUrlExpires?: Date | null;
   cachedDownloadUrl?: string | null;
   downloadUrlExpires?: Date | null;
-  viewUrl?: string;
+  viewUrl: string;
   downloadUrl?: string;
 }
 
@@ -171,6 +171,7 @@ export interface Product {
   description?: string | null;
   draftTemplates?: DraftTemplate[];
   draftPreviews?: DraftPreview[];
+  featureImage?: MerchiFile;
   groupVariationFields?: VariationField[];
   independentVariationFields?: VariationField[];
   images?: MerchiFile[];
