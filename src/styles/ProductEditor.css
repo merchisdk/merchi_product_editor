@@ -1,0 +1,157 @@
+.product-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  background-color: transparent;
+  border-radius: 8px;
+  position: relative;
+}
+
+/* Template buttons styles */
+.template-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0;
+  margin-bottom: -1px;
+  z-index: 2;
+  width: 100%;
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: 10%;
+  transform: translateX(30px);
+}
+
+.template-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 120px;
+  height: 40px;
+  background-color: #f5f5f5;
+  border-radius: 8px 8px 0 0;
+  transition: background-color 0.2s ease;
+}
+
+.template-button.selected {
+  background-color: #303DBF;
+  color: white;
+}
+
+.template-name {
+  font-size: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Main layout */
+.main-editor-layout {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Editor container */
+.editor-container {
+  flex: 1;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Left column containing toolbar and preview */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-self: flex-start;
+}
+
+/* Left toolbar styles */
+.left-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 4px;
+  width: 80px;
+  margin-top: 0.5rem;
+  justify-content: space-between;
+  min-height: 240px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Preview section */
+.preview-section {
+  background-color: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  width: 80px;
+}
+
+.preview-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+
+.preview-images {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preview-image-box {
+  width: 100%;
+  height: 70px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+/* Bottom toolbar for mobile */
+.bottom-toolbar {
+  display: none;
+}
+
+/* Canvas area */
+.canvas-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+/* Responsive layout */
+@media (max-width: 480px) {
+  .main-editor-layout {
+    flex-direction: column;
+  }
+
+  .template-buttons {
+    transform: none;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 300px;
+  }
+
+  .template-button {
+    width: 90px;
+    font-size: 14px;
+  }
+
+  .template-name {
+    font-size: 14px;
+  }
+}

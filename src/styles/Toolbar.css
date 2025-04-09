@@ -1,0 +1,60 @@
+.toolbar-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: auto;
+  flex: 1;
+  justify-content: center;
+  gap: 15px;
+}
+
+.grid-toggle {
+  margin-top: 5px;
+  width: 100%;
+  border-top: none;
+  padding-top: 0;
+}
+
+.toolbar-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem 0.5rem 0.8rem 0.5rem;
+  border-radius: 4px;
+  width: 100%;
+  text-align: center;
+  transition: all 0.2s;
+  margin: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.toolbar-button:hover {
+  background-color: transparent;
+  color: #303DBF;
+}
+
+.toolbar-button:hover svg {
+  stroke: #303DBF;
+  fill: #303DBF;
+}
+
+.toolbar-button.active {
+  background-color: #e6f7ff;
+  color: #303DBF;
+}
+
+.toolbar-button.active svg {
+  stroke: #303DBF;
+}
+
+.toolbar-button span {
+  margin-top: 0.25rem;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toolbar-content .toolbar-button:last-child {
+  border-bottom: none;
+}

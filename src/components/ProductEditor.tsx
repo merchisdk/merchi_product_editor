@@ -2,6 +2,7 @@ import React from 'react';
 import { Product, Variation, Job } from '../types';
 import { ProductEditorProvider, useProductEditor } from '../context/ProductEditorContext';
 import Toolbar from './Toolbar';
+import '../styles/ProductEditor.css';
 
 const Product: React.FC = () => {
   const {
@@ -39,16 +40,19 @@ const Product: React.FC = () => {
       <div className="main-editor-layout">
         {/* Show left toolbar only in desktop view */}
         {!isMobileView && (
-          // <div className={`left-toolbar ${previewImageUrl ? 'left-toolbar-with-preview' : ''}`}>
-          <div className={`left-toolbar`}>
-            <Toolbar />
-            {/* show PSD preview */}
-            {/* {previewImageUrl && (
-              <PreviewPanel
-                previewImageUrl={previewImageUrl}
-                title="Design Preview"
-              />
-            )} */}
+          <div className="left-column">
+            <div className="left-toolbar">
+              <Toolbar />
+            </div>
+
+            {/* Preview section below toolbar */}
+            <div className="preview-section">
+              <h4 className="preview-heading">Preview</h4>
+              <div className="preview-images">
+                <div className="preview-image-box"></div>
+                <div className="preview-image-box"></div>
+              </div>
+            </div>
           </div>
         )}
 

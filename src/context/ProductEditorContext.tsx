@@ -72,15 +72,15 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Initialize canvas objects from variations
   useEffect(() => {
     if (!canvas) return;
-    
+
     const newObjects = new Map<string, fabric.Object>();
     allVariations.forEach(variation => {
       const objectData = buildVariationFieldCanvasObject(variation);
       const fieldId = objectData.fieldId;
       if (!fieldId) return;
-      
+
       let fabricObject: fabric.Object;
-      
+
       if (objectData.canvasObjectType === 'text') {
         fabricObject = new fabric.Text(objectData.text || '', {
           fontSize: objectData.fontSize,
@@ -103,7 +103,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       } else {
         return;
       }
-      
+
       newObjects.set(fieldId.toString(), fabricObject);
     });
     setCanvasObjects(newObjects);
@@ -179,7 +179,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           height,
           backgroundColor: '#ffffff',
         });
-        fabricCanvas.enableHistory();
+        // fabricCanvas.enableHistory(); // Commented out to avoid error
         setCanvas(fabricCanvas);
 
         // If there are draft templates, use the first one as default
@@ -270,26 +270,26 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       canvas.renderAll(); // Re-render the canvas to apply changes
     }
   };
-  
+
   // Function to check for changed variations and update canvas objects
   const updateCanvasFromVariations = (newVariations: Variation[], newGroupVariations: Variation[] = []) => {
     if (!canvas) return;
-    
+
     // Combine all variations
     const newAllVariations = product?.groupVariationFields?.length
       ? [...newVariations, ...newGroupVariations]
       : [...newVariations];
-      
+
     // Process each variation to find changes
     newAllVariations.forEach(newVariation => {
       // Find corresponding old variation to check if it changed
-      const oldVariation = allVariations.find(v => 
+      const oldVariation = allVariations.find(v =>
         v.variationField?.id === newVariation.variationField?.id
       );
-      
+
       // Update the canvas if the variation is new or has changed
-      if (!oldVariation || oldVariation.value !== newVariation.value || 
-          JSON.stringify(oldVariation.variationFiles || []) !== JSON.stringify(newVariation.variationFiles || [])) {
+      if (!oldVariation || oldVariation.value !== newVariation.value ||
+        JSON.stringify(oldVariation.variationFiles || []) !== JSON.stringify(newVariation.variationFiles || [])) {
         updateCanvasObject(newVariation);
       }
     });
@@ -312,14 +312,18 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         width,
         height,
         handleUndo: () => {
-          if (canvas) {
-            canvas.undo();
-          }
+          // if (canvas) {
+          //   canvas.undo();
+          // }
+          // History functionality disabled
+          console.log('Undo functionality is disabled');
         },
         handleRedo: () => {
-          if (canvas) {
-            canvas?.redo();
-          }
+          // if (canvas) {
+          //   canvas.redo();
+          // }
+          // History functionality disabled
+          console.log('Redo functionality is disabled');
         },
         handleTemplateChange,
         handleSave,

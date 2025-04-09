@@ -1,4 +1,5 @@
 import React from 'react';
+import '../styles/PreviewPanel.css';
 
 interface PreviewPanelProps {
   previewImageUrl: string | null;
