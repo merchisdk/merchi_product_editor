@@ -1,6 +1,6 @@
 {
   "name": "merchi_product_editor",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "A React component for editing product images using Fabric.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
