@@ -1,3 +1,6 @@
 @import './ProductEditor.css';
 @import './Toolbar.css';
 @import './PreviewPanel.css';
+@import './ImageGallery.css';
+@import './ImageNavButton.css';
+@import './ImageZoomModal.css';
