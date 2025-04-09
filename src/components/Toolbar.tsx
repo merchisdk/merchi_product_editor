@@ -2,6 +2,7 @@ import React from 'react';
 import { Apps, Redo, Undo } from 'grommet-icons';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { addTextToCanvas } from '../utils/canvasUtils';
+import '../styles/Toolbar.css';
 
 export default function Toolbar() {
   const {
