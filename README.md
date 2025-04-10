@@ -122,6 +122,8 @@ The `useProductEditor` hook provides access to the following properties and meth
 | handleTemplateChange | Function | Method to switch between templates |
 | showGrid | boolean | Whether the grid is currently displayed |
 | setShowGrid | Function | Toggle grid visibility |
+| showPreview | boolean | Whether the preview area is displayed |
+| togglePreview | Function | Toggle preview area visibility |
 | canvasObjects | Map | Map of canvas objects indexed by variation field ID |
 | updateCanvasFromVariations | Function | Update canvas objects based on changed variations |
 

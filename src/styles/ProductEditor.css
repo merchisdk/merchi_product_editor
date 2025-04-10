@@ -64,51 +64,6 @@
   z-index: 1;
 }
 
-/* Left column containing toolbar and preview */
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  align-self: flex-start;
-}
-
-/* Left toolbar styles */
-.left-toolbar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-  background-color: #ffffff;
-  border-radius: 4px;
-  width: 80px;
-  margin-top: 0.5rem;
-  justify-content: space-between;
-  min-height: 240px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Preview section */
-.preview-section {
-  background-color: #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  width: 80px;
-}
-
-.preview-heading {
-  font-size: 14px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 10px 0;
-  text-align: center;
-}
-
-/* Bottom toolbar for mobile */
-.bottom-toolbar {
-  display: none;
-}
-
 /* Canvas area */
 .canvas-area {
   display: flex;
