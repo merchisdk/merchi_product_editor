@@ -1,21 +1,8 @@
-.toolbar-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  margin-bottom: auto;
-  flex: 1;
-  justify-content: center;
-  gap: 15px;
-}
-
+.toolbar-content,
 .grid-toggle,
 .preview-toggle {
-  margin-top: 5px;
-  margin-bottom: 10px;
   width: 100%;
-  border-top: none;
-  padding-top: 0;
+  margin-bottom: 4px;
 }
 
 .toolbar-button {
@@ -23,18 +10,16 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 0.5rem 0.5rem 0.8rem 0.5rem;
+  padding: 0.3rem 0.2rem 0.5rem 0.2rem;
   border-radius: 4px;
-  width: 100%;
   box-sizing: border-box;
   text-align: center;
   transition: all 0.2s;
-  margin: 0;
-  border-bottom: 1px solid #f0f0f0;
 }
 
-.toolbar-content>.toolbar-button:last-child {
-  border-bottom: none;
+.toolbar-button span {
+  font-size: 11px;
+  margin-top: 0.15rem;
 }
 
 .toolbar-button:hover {
@@ -56,10 +41,10 @@
   stroke: #303DBF;
 }
 
-.toolbar-button span {
-  margin-top: 0.25rem;
-  font-size: 14px;
-  font-weight: 600;
+.toolbar-button:hover svg,
+.toolbar-button.active svg {
+  stroke: #303DBF;
+  fill: #303DBF;
 }
 
 .preview-toggle .toolbar-button {
@@ -72,4 +57,56 @@
 
 .grid-toggle+.toolbar-content .toolbar-button {
   border-bottom: none;
+}
+
+/* mobile toolbar */
+.mobile-bottom-toolbar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  padding: 5px 0;
+}
+
+.mobile-bottom-toolbar .grid-toggle,
+.mobile-bottom-toolbar .preview-toggle,
+.mobile-bottom-toolbar .toolbar-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  margin-bottom: 0;
+  gap: 15px;
+  flex: none;
+}
+
+.mobile-bottom-toolbar .toolbar-button {
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 8px;
+  width: auto;
+  border: none;
+  background-color: transparent;
+}
+
+.mobile-bottom-toolbar .toolbar-button span {
+  font-size: 10px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.mobile-bottom-toolbar .toolbar-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-bottom-toolbar .toolbar-button.active {
+  background-color: #e6f7ff;
+  border-radius: 4px;
+}
+
+.mobile-bottom-toolbar .grid-toggle .toolbar-button,
+.mobile-bottom-toolbar .preview-toggle .toolbar-button,
+.mobile-bottom-toolbar .toolbar-content .toolbar-button {
+  border: none;
 }

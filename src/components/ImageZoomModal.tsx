@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Close, FormPrevious, FormNext } from "grommet-icons";
 
+const MODAL_BODY_CLASS = 'has-preview-modal-open';
+
 interface ImageZoomModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,12 +28,15 @@ const ImageZoomModal = ({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add(MODAL_BODY_CLASS);
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove(MODAL_BODY_CLASS);
     }
 
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove(MODAL_BODY_CLASS);
     };
   }, [isOpen]);
 

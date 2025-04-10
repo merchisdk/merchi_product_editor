@@ -2,6 +2,7 @@ import React from 'react';
 import { useProductEditor } from '../context/ProductEditorContext';
 import FloatingToolbar from './FloatingToolbar';
 import BottomPreviewDisplay from './BottomPreviewDisplay';
+import Toolbar from './Toolbar';
 import '../styles/ProductEditor.css';
 
 // Placeholder for the preview images
@@ -22,8 +23,9 @@ const ProductEditor: React.FC = () => {
   } = useProductEditor();
 
   const disableCanvasEvents = (e: React.MouseEvent) => {
-    // Allow clicks on toolbar and preview bar container
-    if ((e.target as HTMLElement).closest('.floating-toolbar') || (e.target as HTMLElement).closest('.bottom-preview-section')) {
+    if ((e.target as HTMLElement).closest('.floating-toolbar') ||
+      (e.target as HTMLElement).closest('.bottom-preview-section') ||
+      (e.target as HTMLElement).closest('.mobile-bottom-toolbar')) {
       return;
     }
     e.stopPropagation();
@@ -49,17 +51,25 @@ const ProductEditor: React.FC = () => {
       )}
 
       <div className="main-editor-layout" style={{ position: 'relative' }}>
-        <div className="editor-container">
+        <div
+          className={`editor-container ${isMobileView && showPreview ? 'has-bottom-padding' : ''}`}
+        >
           <div className="canvas-area" onClick={disableCanvasEvents}>
             <canvas ref={canvasRef} />
           </div>
-          <FloatingToolbar />
+          {!isMobileView && <FloatingToolbar />}
         </div>
 
-        {!isMobileView && showPreview && (
+        {showPreview && (
           <BottomPreviewDisplay images={placeholderPreviews} />
         )}
       </div>
+
+      {isMobileView && (
+        <div className="mobile-bottom-toolbar">
+          <Toolbar />
+        </div>
+      )}
     </div>
   );
 };

@@ -76,25 +76,62 @@
   overflow: hidden;
 }
 
+/* Mobile Bottom Toolbar Styles */
+.mobile-bottom-toolbar {
+  display: flex;
+  background-color: #ffffff;
+  border-top: 1px solid #e0e0e0;
+  padding: 5px 10px;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 1000;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+body.has-preview-modal-open .mobile-bottom-toolbar {
+  display: none;
+}
+
 /* Responsive layout */
 @media (max-width: 480px) {
   .main-editor-layout {
     flex-direction: column;
   }
 
+  .editor-container {
+    padding: 0.5rem;
+  }
+
+  .editor-container.has-bottom-padding {
+    padding-bottom: 85px;
+  }
+
+  .canvas-area {
+    padding: 0.5rem;
+  }
+
   .template-buttons {
     transform: none;
     margin-left: auto;
     margin-right: auto;
-    max-width: 300px;
+    max-width: calc(100% - 20px);
+    padding: 0 10px;
   }
 
   .template-button {
-    width: 90px;
-    font-size: 14px;
+    width: auto;
+    padding: 0.5rem 0.8rem;
+    font-size: 13px;
+    flex-grow: 1;
+    text-align: center;
   }
 
   .template-name {
-    font-size: 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
