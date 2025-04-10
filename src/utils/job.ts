@@ -84,11 +84,19 @@ export function canvasTemplateVariationObjects(variations: Variation[], template
 
 export function initDraftTemplates(variations: Variation[], product: Product) {
   const { draftTemplates = [] } = product;
+  console.log('Initializing draft templates from product:', { 
+    productTemplates: draftTemplates.length,
+    variations: variations.length 
+  });
+  
   // Check for any templates that are selected by the variation options
   const templates = findTemplatesSelectedByVarations(draftTemplates, variations) || [];
+  console.log('Templates selected by variations:', templates.length);
 
   // If there are no templates selected, return the draft templates
   const useTemplates = templates.length ? templates : draftTemplates;
+  console.log('Using templates:', useTemplates.length);
+  
   return useTemplates.map((template: DraftTemplate) => {
     // find the variations which edit the template
     const templateVariations = filterVariationsByTemplate(variations, template);

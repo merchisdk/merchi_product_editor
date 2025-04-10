@@ -153,7 +153,6 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
           </div>
         </div>
       )}
-
       <ImageZoomModal
         isOpen={isZoomModalOpen}
         onClose={() => setIsZoomModalOpen(false)}
