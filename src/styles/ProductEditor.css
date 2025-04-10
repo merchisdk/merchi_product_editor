@@ -19,7 +19,7 @@
   width: 100%;
   max-width: 550px;
   margin-left: auto;
-  margin-right: 10%;
+  margin-right: 15%;
   transform: translateX(30px);
 }
 
@@ -104,20 +104,6 @@
   text-align: center;
 }
 
-.preview-images {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.preview-image-box {
-  width: 100%;
-  height: 70px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
-}
-
 /* Bottom toolbar for mobile */
 .bottom-toolbar {
   display: none;
@@ -131,6 +117,8 @@
   background-color: #ffffff;
   border-radius: 4px;
   padding: 1rem;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Responsive layout */
