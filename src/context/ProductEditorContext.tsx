@@ -14,6 +14,8 @@ interface ProductEditorContextType {
   setSelectedTemplate: (templateId: number) => void;
   showGrid: boolean;
   setShowGrid: (show: boolean) => void;
+  showPreview: boolean;
+  togglePreview: () => void;
   product: Product;
   isMobileView: boolean;
   job: Job;
@@ -68,6 +70,12 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     draftTemplates?.[0]?.template?.id || null
   );
   const [showGrid, setShowGrid] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+
+  // Function to toggle preview visibility
+  const togglePreview = () => {
+    setShowPreview(prev => !prev);
+  };
 
   // Initialize canvas objects from variations
   useEffect(() => {
@@ -306,6 +314,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         setSelectedTemplate,
         showGrid,
         setShowGrid,
+        showPreview,
+        togglePreview,
         product,
         isMobileView,
         job,

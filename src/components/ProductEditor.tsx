@@ -1,7 +1,16 @@
 import React from 'react';
 import { useProductEditor } from '../context/ProductEditorContext';
+import FloatingToolbar from './FloatingToolbar';
+import BottomPreviewDisplay from './BottomPreviewDisplay';
 import Toolbar from './Toolbar';
 import '../styles/ProductEditor.css';
+
+// Placeholder for the preview images
+const placeholderPreviews = [
+  { id: 1, viewUrl: 'https://picsum.photos/id/10/600/600' },
+  { id: 2, viewUrl: 'https://picsum.photos/id/20/600/600' },
+  { id: 3, viewUrl: 'https://picsum.photos/id/30/600/600' },
+];
 
 const ProductEditor: React.FC = () => {
   const {
@@ -10,10 +19,15 @@ const ProductEditor: React.FC = () => {
     handleTemplateChange,
     isMobileView,
     selectedTemplate,
+    showPreview,
   } = useProductEditor();
 
-  // Disable canvas events to prevent accidental template changes
   const disableCanvasEvents = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.floating-toolbar') ||
+      (e.target as HTMLElement).closest('.bottom-preview-section') ||
+      (e.target as HTMLElement).closest('.mobile-bottom-toolbar')) {
+      return;
+    }
     e.stopPropagation();
   };
 
@@ -36,47 +50,26 @@ const ProductEditor: React.FC = () => {
         </div>
       )}
 
-      <div className="main-editor-layout">
-        {/* Show left toolbar only in desktop view */}
-        {!isMobileView && (
-          <div className="left-column">
-            <div className="left-toolbar">
-              <Toolbar />
-            </div>
-
-            {/* Preview section below toolbar */}
-            <div className="preview-section">
-              <h4 className="preview-heading">Preview</h4>
-              <div className="preview-images">
-                <div className="preview-image-box"></div>
-                <div className="preview-image-box"></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="editor-container">
-          {/* Canvas area */}
+      <div className="main-editor-layout" style={{ position: 'relative' }}>
+        <div
+          className={`editor-container ${isMobileView && showPreview ? 'has-bottom-padding' : ''}`}
+        >
           <div className="canvas-area" onClick={disableCanvasEvents}>
             <canvas ref={canvasRef} />
           </div>
+          {!isMobileView && <FloatingToolbar />}
         </div>
+
+        {showPreview && (
+          <BottomPreviewDisplay images={placeholderPreviews} />
+        )}
       </div>
 
-      {/* Show bottom toolbar only in mobile view */}
       {isMobileView && (
-        <div className="bottom-toolbar">
+        <div className="mobile-bottom-toolbar">
           <Toolbar />
         </div>
       )}
-
-      {/* In mobile view, show preview panel below the editor if have a preview */}
-      {/* {isMobileView && previewImageUrl && (
-        <PreviewPanel
-          previewImageUrl={previewImageUrl}
-          title="Design Preview"
-        />
-      )} */}
     </div>
   );
 };
