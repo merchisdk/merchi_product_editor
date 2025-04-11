@@ -90,7 +90,13 @@
   z-index: 2;
 }
 
-/* Thumbnails gallery */
+/* Hide nav buttons on small screens (mobile) */
+@media (max-width: 767px) {
+  .nav-buttons-container {
+    display: none;
+  }
+}
+
 .thumbnails-container {
   width: 100%;
   overflow-x: auto;
