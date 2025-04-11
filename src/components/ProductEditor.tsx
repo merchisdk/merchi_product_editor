@@ -3,6 +3,7 @@ import { useProductEditor } from '../context/ProductEditorContext';
 import FloatingToolbar from './FloatingToolbar';
 import BottomPreviewDisplay from './BottomPreviewDisplay';
 import Toolbar from './Toolbar';
+import LoadingOverlay from './LoadingOverlay';
 import '../styles/ProductEditor.css';
 
 // Placeholder for the preview images
@@ -20,6 +21,7 @@ const ProductEditor: React.FC = () => {
     isMobileView,
     selectedTemplate,
     showPreview,
+    isCanvasLoading,
   } = useProductEditor();
 
   const disableCanvasEvents = (e: React.MouseEvent) => {
@@ -55,6 +57,7 @@ const ProductEditor: React.FC = () => {
           className={`editor-container ${isMobileView && showPreview ? 'has-bottom-padding' : ''}`}
         >
           <div className="canvas-area" onClick={disableCanvasEvents}>
+            <LoadingOverlay isLoading={isCanvasLoading} className="canvas-loading" />
             <canvas ref={canvasRef} />
           </div>
           {!isMobileView && <FloatingToolbar />}
