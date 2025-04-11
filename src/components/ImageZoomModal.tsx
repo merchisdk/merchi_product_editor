@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Close, FormPrevious, FormNext } from "grommet-icons";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSwipeNavigate } from "../hooks/useSwipeNavigate";
 
 const MODAL_BODY_CLASS = 'has-preview-modal-open';
 
@@ -24,6 +26,7 @@ const ImageZoomModal = ({
 }: ImageZoomModalProps) => {
   const [modalImageIndex, setModalImageIndex] = useState(currentIndex);
   const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
   useEffect(() => {
     if (isOpen) {
@@ -43,9 +46,11 @@ const ImageZoomModal = ({
   useEffect(() => {
     setModalImageIndex(currentIndex);
     setCurrentImageUrl(imageUrl);
-  }, [currentIndex, imageUrl]);
+    setSlideDirection('right');
+  }, [currentIndex, imageUrl, isOpen]);
 
   const handlePrevious = () => {
+    setSlideDirection('left');
     setModalImageIndex((prev) => {
       const newIndex = (prev - 1 + totalImages) % totalImages;
       setCurrentImageUrl(allImages[newIndex].viewUrl);
@@ -54,11 +59,42 @@ const ImageZoomModal = ({
   };
 
   const handleNext = () => {
+    setSlideDirection('right');
     setModalImageIndex((prev) => {
       const newIndex = (prev + 1) % totalImages;
       setCurrentImageUrl(allImages[newIndex].viewUrl);
       return newIndex;
     });
+  };
+
+  const swipeHandlers = useSwipeNavigate({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrevious,
+  });
+
+  const slideVariants = {
+    enter: (direction: 'left' | 'right') => ({
+      x: direction === 'right' ? 1000 : -1000,
+      opacity: 0
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 }
+      }
+    },
+    exit: (direction: 'left' | 'right') => ({
+      zIndex: 0,
+      x: direction === 'left' ? 1000 : -1000,
+      opacity: 0,
+      transition: {
+        x: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.05 }
+      }
+    })
   };
 
   if (!isOpen) return null;
@@ -80,13 +116,24 @@ const ImageZoomModal = ({
           <FormPrevious width={42} height={42} color="white" />
         </button>
 
-        <div className="zoom-image-container">
-          <img
-            src={currentImageUrl}
-            alt={productName}
-            className="zoom-image"
-            loading="lazy"
-          />
+        <div
+          className="zoom-image-container"
+          {...swipeHandlers}
+        >
+          <AnimatePresence initial={false} custom={slideDirection}>
+            <motion.img
+              key={modalImageIndex}
+              src={currentImageUrl}
+              alt={productName}
+              className="zoom-image"
+              loading="lazy"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            />
+          </AnimatePresence>
         </div>
 
         <button
