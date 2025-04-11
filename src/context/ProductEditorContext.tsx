@@ -2,9 +2,16 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { fabric } from 'fabric';
 import { Product, Job, DraftTemplate, Variation, DraftPreviewLayer, DraftPreview } from '../types';
 import { drawGrid, saveGridState, clearCanvasExceptGrid } from '../utils/grid';
-import { addVariationsToCanvas, initDraftTemplates, buildVariationFieldCanvasObject } from '../utils/job';
+import { 
+  addVariationsToCanvas, 
+  initDraftTemplates, 
+  buildVariationFieldCanvasObject, 
+  filterVariationsByTemplate,
+  canvasTemplateVariationObjects
+} from '../utils/job';
 import { setupKeyboardEvents } from '../utils/ImageHandler';
 import { loadPsdOntoCanvas } from '../utils/psdConverter';
+import { addTextToCanvas, addFilesToCanvas } from '../utils/canvasUtils';
 
 interface ProductEditorContextType {
   canvas: fabric.Canvas | null;
@@ -30,6 +37,9 @@ interface ProductEditorContextType {
   handleCancel: () => void;
   canvasObjects: Map<string, fabric.Object>;
   updateCanvasFromVariations: (newVariations: Variation[], newGroupVariations?: Variation[]) => void;
+  savedObjects: SavedCanvasObject[];
+  restoreSavedObjects: (fabricCanvas: fabric.Canvas, savedObjs: SavedCanvasObject[]) => void;
+  saveCanvasObjectsState: (fabricCanvas: fabric.Canvas) => SavedCanvasObject[];
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -85,7 +95,15 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [
     draftTemplates,
     setDraftTemplates
-  ] = useState(initDraftTemplates(allVariations, product));
+  ] = useState(([] as any[]));
+  
+  // Add this useEffect to update draftTemplates when variations change
+  useEffect(() => {
+    console.log('Variations changed, updating draftTemplates');
+    const newDraftTemplates = initDraftTemplates(allVariations, product);
+    console.log('New draft templates:', newDraftTemplates);
+    setDraftTemplates(newDraftTemplates);
+  }, [variations, groupVariations, product]);
 
   // need to fix the embed relationship with draftTemplates and draftPreviewLayers
   // const draftPreviews: DraftPreview[] = Array.from(
@@ -116,47 +134,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const togglePreview = () => {
     setShowPreview(prev => !prev);
   };
-
-  // Initialize canvas objects from variations
-  useEffect(() => {
-    if (!canvas) return;
-
-    const newObjects = new Map<string, fabric.Object>();
-    allVariations.forEach(variation => {
-      const objectData = buildVariationFieldCanvasObject(variation);
-      console.log('objectData', objectData);
-      const fieldId = objectData.fieldId;
-    //   if (!fieldId) return;
-
-    //   let fabricObject: fabric.Object;
-
-    //   if (objectData.canvasObjectType === 'text') {
-    //     fabricObject = new fabric.Text(objectData.text || '', {
-    //       fontSize: objectData.fontSize,
-    //       fontFamily: objectData.fontFamily
-    //     });
-    //   } else if (objectData.canvasObjectType === 'image' && objectData.files?.[0]?.viewUrl) {
-    //     fabric.Image.fromURL(objectData.files[0].viewUrl, (img) => {
-    //       if (img) {
-    //         newObjects.set(fieldId.toString(), img);
-    //         setCanvasObjects(new Map(newObjects));
-    //       }
-    //     });
-    //     return;
-    //   } else if (objectData.canvasObjectType === 'colour' && objectData.colour) {
-    //     fabricObject = new fabric.Rect({
-    //       fill: objectData.colour,
-    //       width: 50,
-    //       height: 50
-    //     });
-    //   } else {
-    //     return;
-    //   }
-
-    //   newObjects.set(fieldId.toString(), fabricObject);
-    });
-    // setCanvasObjects(newObjects);
-  }, [canvas, variations, groupVariations]);
 
   const handleSave = () => {
     if (canvas) {
@@ -289,37 +266,56 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       return;
     }
     
-    // Save the current state of canvas objects before changing template
-    const objectsToSave = saveCanvasObjectsState(canvas);
-    console.log(`Saving ${objectsToSave.length} objects before template change`);
-    
     // Update the selected template
     if (draftTemplate.id) {
       setSelectedTemplate(draftTemplate.id);
     }
     
-    // First clear the canvas (except grid)
-    clearCanvasExceptGrid(canvas);
+    console.log('Completely resetting canvas for new template');
     
-    // Then load the template image without adding default variations
-    loadTemplateImage(canvas, draftTemplate).then(() => {
-      // After the template is loaded, restore the saved objects
-      if (objectsToSave.length > 0) {
-        console.log(`Restoring ${objectsToSave.length} saved objects after template change`);
-        restoreSavedObjects(canvas, objectsToSave);
-      } else {
-        console.log('No saved objects to restore, loading default variations');
-        // If there are no saved objects, add the default variation objects
+    // Create a clean canvas reference for tracking
+    const currentCanvas = canvas;
+    
+    // Create a new canvas before disposing the old one
+    if (canvasRef.current) {
+      const newCanvas = new fabric.Canvas(canvasRef.current, {
+        width,
+        height,
+        backgroundColor: '#ffffff',
+      });
+      
+      // Update the state with the new canvas first
+      setCanvas(newCanvas);
+      
+      // AFTER setting the new canvas in state, dispose the old one
+      // This ensures any async operations know to abort
+      currentCanvas.dispose();
+      
+      // Now load the template image and add variations
+      loadTemplateImage(newCanvas, draftTemplate).then(() => {
+        // Find the template data and add variations
         const templateData = draftTemplates.find(dt => dt.template.id === draftTemplate.id);
         if (templateData) {
           addVariationsToCanvas(
-            canvas,
+            newCanvas,
             templateData.variationObjects,
             draftTemplate
           );
         }
-      }
-    });
+        
+        // Draw grid if needed
+        if (showGrid) {
+          drawGrid(newCanvas, width, height, 20, '#a0a0a0', showGrid);
+        }
+        
+        // Re-setup keyboard events for the new canvas
+        setupKeyboardEvents(newCanvas, (dataUrl) => {
+          if (document.activeElement === newCanvas.upperCanvasEl) {
+            onSave && onSave();
+          }
+        });
+      });
+    }
   };
 
   // Simplify loadTemplateImage to just load the template without variations
@@ -327,6 +323,10 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     fabricCanvas: fabric.Canvas, 
     template: DraftTemplate
   ): Promise<void> => {
+    // Add an ID to the canvas to track it
+    const canvasId = Date.now().toString();
+    (fabricCanvas as any).loadingId = canvasId;
+    
     console.log('loadTemplateImage called with template:', template.id, template.name);
     
     // Check if we have a valid image URL
@@ -350,34 +350,79 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     if (isPsd) {
       console.log('Detected PSD file, using PSD processing utility');
       
-      // Show loading indicator
-      const loadingText = new fabric.Text('Loading PSD file...', {
-        left: width / 2,
-        top: height / 2,
-        fontSize: 20,
-        originX: 'center',
-        originY: 'center',
-        fill: '#888888'
-      });
-      fabricCanvas.add(loadingText);
-      fabricCanvas.renderAll();
+      // First, check if the canvas is still valid
+      if ((fabricCanvas as any).loadingId !== canvasId) {
+        console.warn('Canvas changed during PSD loading setup, aborting');
+        return Promise.resolve();
+      }
+      
+      // // Show loading indicator
+      // const loadingText = new fabric.Text('Loading PSD file...', {
+      //   left: width / 2,
+      //   top: height / 2,
+      //   fontSize: 20,
+      //   originX: 'center',
+      //   originY: 'center',
+      //   fill: '#888888'
+      // });
+      
+      // // Check if canvas is still valid
+      // if ((fabricCanvas as any).loadingId !== canvasId) {
+      //   console.warn('Canvas changed before adding loading text, aborting');
+      //   return Promise.resolve();
+      // }
+      
+      // fabricCanvas.add(loadingText);
       
       try {
+        // Check again before renderAll
+        if ((fabricCanvas as any).loadingId !== canvasId) {
+          console.warn('Canvas changed before rendering loading text, aborting');
+          return Promise.resolve();
+        }
+        
+        fabricCanvas.renderAll();
+        
         // Process the PSD file
         await loadPsdOntoCanvas(fabricCanvas, imageUrl, width, height);
-        fabricCanvas.remove(loadingText);
+        
+        // Check if the canvas is still valid
+        if ((fabricCanvas as any).loadingId !== canvasId) {
+          console.warn('Canvas changed after PSD processing, aborting cleanup');
+          return Promise.resolve();
+        }
+        
+        // fabricCanvas.remove(loadingText);
         
         // Redraw grid to ensure it's on top
         if (hasGrid && showGrid) {
           drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
         }
         
-        fabricCanvas.renderAll();
-        console.log('PSD loaded and rendered on canvas');
+        // Final check before renderAll
+        if ((fabricCanvas as any).loadingId !== canvasId) {
+          console.warn('Canvas changed before final render, aborting');
+          return Promise.resolve();
+        }
+        
+        try {
+          fabricCanvas.renderAll();
+          console.log('PSD loaded and rendered on canvas');
+        } catch (e) {
+          console.error('Error rendering canvas:', e);
+        }
+        
         return Promise.resolve();
       } catch (error) {
         console.error('Failed to load PSD:', error);
-        fabricCanvas.remove(loadingText);
+        
+        // Check if the canvas is still valid
+        if ((fabricCanvas as any).loadingId !== canvasId) {
+          console.warn('Canvas changed during error handling, aborting');
+          return Promise.resolve();
+        }
+        
+        // fabricCanvas.remove(loadingText);
         
         // If PSD processing fails, fall back to our regular image loading
         return loadRegularImagePromise(fabricCanvas, template, hasGrid);
@@ -394,7 +439,17 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     template: DraftTemplate, 
     hasGrid: boolean
   ): Promise<void> => {
+    // Get the canvas ID for tracking
+    const canvasId = (fabricCanvas as any).loadingId;
+    
     return new Promise((resolve) => {
+      // Check if canvas is still valid
+      if ((fabricCanvas as any).loadingId !== canvasId) {
+        console.warn('Canvas changed before starting image load, aborting');
+        resolve();
+        return;
+      }
+      
       const imageUrl = template.file!.viewUrl;
       
       // Check if this might be a problematic file format
@@ -423,8 +478,9 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       fabric.Image.fromURL(
         urlToUse,
         (img: fabric.Image) => {
-          if (!fabricCanvas) {
-            console.error('Canvas is no longer available');
+          // Check if canvas is still valid
+          if ((fabricCanvas as any).loadingId !== canvasId) {
+            console.warn('Canvas changed after image loaded, aborting');
             resolve();
             return;
           }
@@ -436,6 +492,13 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             const imgElement = new Image();
             imgElement.crossOrigin = 'anonymous';
             imgElement.onload = () => {
+              // Check if canvas is still valid
+              if ((fabricCanvas as any).loadingId !== canvasId) {
+                console.warn('Canvas changed after alternative image loaded, aborting');
+                resolve();
+                return;
+              }
+              
               const fabricImg = new fabric.Image(imgElement);
               console.log('Alternative loading successful!');
               
@@ -453,6 +516,13 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
                 evented: false,
               });
               
+              // Check again before adding to canvas
+              if ((fabricCanvas as any).loadingId !== canvasId) {
+                console.warn('Canvas changed before adding alternative image, aborting');
+                resolve();
+                return;
+              }
+              
               fabricCanvas.add(fabricImg);
               fabricCanvas.sendToBack(fabricImg);
               
@@ -460,15 +530,41 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
                 drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
               }
               
-              fabricCanvas.renderAll();
+              // Final check before render
+              if ((fabricCanvas as any).loadingId !== canvasId) {
+                console.warn('Canvas changed before rendering alternative image, aborting');
+                resolve();
+                return;
+              }
+              
+              try {
+                fabricCanvas.renderAll();
+              } catch (e) {
+                console.error('Error rendering canvas with alternative image:', e);
+              }
+              
               resolve();
             };
             
             imgElement.onerror = () => {
+              // Check if canvas is still valid
+              if ((fabricCanvas as any).loadingId !== canvasId) {
+                console.warn('Canvas changed after image load error, aborting');
+                resolve();
+                return;
+              }
+              
               console.error('Alternative loading also failed. Using placeholder image.');
               // Use a placeholder SVG as absolute fallback
               const placeholderURL = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22800%22%20height%3D%22600%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%20600%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_1891%20text%20%7Bfill%3A%23AAAAAA%3Bfont-weight%3Abold%3Bfont-family%3AArial%2C%20Helvetica%2C%20Open%20Sans%2C%20sans-serif%2C%20monospace%3Bfont-size%3A40pt%20%7D%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23EEEEEE%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22285%22%20y%3D%22300%22%3EThumbnail%20Unavailable%3C%2Ftext%3E%3Ctext%20x%3D%22205%22%20y%3D%22350%22%3ETemplate%3A%20'+ template.name +'%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';
               fabric.Image.fromURL(placeholderURL, (placeholderImg) => {
+                // Check if canvas is still valid
+                if ((fabricCanvas as any).loadingId !== canvasId) {
+                  console.warn('Canvas changed before adding placeholder image, aborting');
+                  resolve();
+                  return;
+                }
+                
                 placeholderImg.set({
                   left: 0,
                   top: 0,
@@ -478,7 +574,20 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
                   evented: false,
                 });
                 fabricCanvas.add(placeholderImg);
-                fabricCanvas.renderAll();
+                
+                // Final check before render
+                if ((fabricCanvas as any).loadingId !== canvasId) {
+                  console.warn('Canvas changed before rendering placeholder image, aborting');
+                  resolve();
+                  return;
+                }
+                
+                try {
+                  fabricCanvas.renderAll();
+                } catch (e) {
+                  console.error('Error rendering canvas with placeholder image:', e);
+                }
+                
                 resolve();
               });
             };
@@ -514,6 +623,13 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             top: img.top
           });
 
+          // Check if canvas is still valid before adding image
+          if ((fabricCanvas as any).loadingId !== canvasId) {
+            console.warn('Canvas changed before adding main image, aborting');
+            resolve();
+            return;
+          }
+
           fabricCanvas.add(img);
           fabricCanvas.sendToBack(img); // ensure the template is on the bottom
           
@@ -524,8 +640,20 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
           }
 
-          fabricCanvas.renderAll();
-          console.log('Canvas rendered');
+          // Final check before render
+          if ((fabricCanvas as any).loadingId !== canvasId) {
+            console.warn('Canvas changed before final render, aborting');
+            resolve();
+            return;
+          }
+          
+          try {
+            fabricCanvas.renderAll();
+            console.log('Canvas rendered');
+          } catch (e) {
+            console.error('Error rendering canvas:', e);
+          }
+          
           resolve();
         },
         { crossOrigin: 'anonymous' } // Options object for handling CORS issues
@@ -534,26 +662,36 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   };
 
   useEffect(() => {
+    console.log('Init effect running with draftTemplates:', draftTemplates);
+    
+    // Cleanup function for previous canvas
+    if (canvas) {
+      console.log('Disposing old canvas before creating new one');
+      canvas.dispose();
+    }
+    
     const init = async () => {
       if (canvasRef.current) {
+        console.log('Creating new canvas with latest draftTemplates:', draftTemplates);
         const fabricCanvas = new fabric.Canvas(canvasRef.current, {
           width,
           height,
           backgroundColor: '#ffffff',
         });
-        // fabricCanvas.enableHistory(); // Commented out to avoid error
+        
         setCanvas(fabricCanvas);
 
         // If there are draft templates, use the first one as default
         if (!!draftTemplates.length) {
-          console.log('Loading template:', draftTemplates[0].template);
           const draftTemplate = draftTemplates[0];
+          console.log('Loading template from latest draftTemplates:', draftTemplate.template);
+
           if (draftTemplate?.template?.file?.viewUrl) {
             // First load the template image
             await loadTemplateImage(fabricCanvas, draftTemplate.template);
             
             // Then add the variations to the canvas
-            console.log('Adding default variations for initial load');
+            console.log('Adding variations from latest draftTemplates');
             await addVariationsToCanvas(
               fabricCanvas,
               draftTemplate.variationObjects,
@@ -578,14 +716,17 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
         return () => {
           cleanupKeyboardEvents();
-          if (fabricCanvas) {
-            fabricCanvas.dispose();
-          }
         };
       }
     }
+    
     init();
-  }, [product, width, height, onSave, draftTemplates]);
+    
+    // Cleanup function
+    return () => {
+      // We already handle canvas disposal at the beginning of the effect
+    };
+  }, [draftTemplates, width, height, showGrid, onSave]);
 
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
   // Check if we're on a small screen
@@ -609,53 +750,54 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     }
   }, [showGrid, width, height, canvas]);
 
-  // Function to update a canvas object when a variation changes
-  const updateCanvasObject = (variation: Variation) => {
-    const objectData = buildVariationFieldCanvasObject(variation);
-    const fieldId = objectData.fieldId;
-    if (!fieldId || !canvas) return;
-
-    const existingObject = canvasObjects.get(fieldId.toString());
-    if (existingObject) {
-      if (objectData.canvasObjectType === 'text' && existingObject instanceof fabric.Text) {
-        existingObject.set({
-          text: objectData.text || '',
-          fontSize: objectData.fontSize,
-          fontFamily: objectData.fontFamily,
-        });
-      } else if (objectData.canvasObjectType === 'colour' && existingObject instanceof fabric.Rect && objectData.colour) {
-        existingObject.set({
-          fill: objectData.colour,
-        });
-      }
-      // Add more conditions if needed for other object types
-
-      canvas.renderAll(); // Re-render the canvas to apply changes
-    }
-  };
-
-  // Function to check for changed variations and update canvas objects
+  // Add this function to update the canvas based on new variation values
   const updateCanvasFromVariations = (newVariations: Variation[], newGroupVariations: Variation[] = []) => {
-    if (!canvas) return;
-
+    if (!canvas || !selectedTemplate) return;
+    
+    console.log('Updating canvas from variations');
+    
+    // Find the currently selected template
+    const template = draftTemplates.find(dt => dt.template.id === selectedTemplate)?.template;
+    if (!template) {
+      console.error('Selected template not found:', selectedTemplate);
+      return;
+    }
+    
+    // Clear existing variation objects from canvas
+    const objectsToRemove = canvas.getObjects().filter(obj => 
+      obj.data?.fieldId !== undefined && obj.selectable === true
+    );
+    objectsToRemove.forEach(obj => canvas.remove(obj));
+    
     // Combine all variations
-    const newAllVariations = product?.groupVariationFields?.length
-      ? [...newVariations, ...newGroupVariations]
-      : [...newVariations];
-
-    // Process each variation to find changes
-    newAllVariations.forEach(newVariation => {
-      // Find corresponding old variation to check if it changed
-      const oldVariation = allVariations.find(v =>
-        v.variationField?.id === newVariation.variationField?.id
-      );
-
-      // Update the canvas if the variation is new or has changed
-      if (!oldVariation || oldVariation.value !== newVariation.value ||
-        JSON.stringify(oldVariation.variationFiles || []) !== JSON.stringify(newVariation.variationFiles || [])) {
-        updateCanvasObject(newVariation);
+    const allNewVariations = [...newVariations, ...newGroupVariations];
+    
+    // Add the new variations to the canvas
+    const variationObjects = canvasTemplateVariationObjects(
+      filterVariationsByTemplate(allNewVariations, template),
+      template
+    );
+    
+    variationObjects.forEach((object: any) => {
+      if (object.canvasObjectType === 'text') {
+        addTextToCanvas(
+          canvas, 
+          template.width || 800, 
+          template.height || 600, 
+          object.text, 
+          object.fontSize, 
+          object.fontFamily
+        );
+      }
+      if (object.canvasObjectType === 'image') {
+        addFilesToCanvas(canvas, object.files, object.width, object.height);
+      }
+      if (object.canvasObjectType === 'colour') {
+        canvas.add(object);
       }
     });
+    
+    canvas.renderAll();
   };
 
   return (
@@ -696,6 +838,9 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         handleCancel: () => onCancel(),
         canvasObjects,
         updateCanvasFromVariations,
+        savedObjects,
+        restoreSavedObjects,
+        saveCanvasObjectsState,
       }}
     >
       {children}

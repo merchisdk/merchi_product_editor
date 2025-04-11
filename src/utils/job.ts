@@ -89,11 +89,9 @@ export function initDraftTemplates(variations: Variation[], product: Product) {
   
   // Check for any templates that are selected by the variation options
   const templates = findTemplatesSelectedByVarations(draftTemplates, variations) || [];
-  console.log('Templates selected by variations:', templates);
 
   // If there are no templates selected, return the draft templates
   const useTemplates = templates.length ? templates : draftTemplates;
-  console.log('Using templates:', useTemplates.length);
   
   return useTemplates.map((template: DraftTemplate) => {
     // find the variations which edit the template

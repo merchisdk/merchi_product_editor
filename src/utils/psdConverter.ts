@@ -283,12 +283,31 @@ export const loadPsdOntoCanvas = async (
   height: number
 ): Promise<void> => {
   try {
+    // Store the canvas reference in a variable for checking
+    const canvasRef = canvas;
+    
+    // Store the current psdUrl on the canvas to help track which operation is active
+    canvasRef.psdUrl = psdUrl;
+    
     // Get the rendered PSD and design bounds if available
-    console.log('Extracting PSD base layer...');
     const { dataUrl, designBounds } = await extractPsdBaseLayer(psdUrl);
     
     return new Promise((resolve, reject) => {
+      // Check if the canvas is still the same one that requested this operation
+      if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+        console.warn('Canvas changed or disposed during PSD processing, aborting.');
+        resolve();
+        return;
+      }
+      
       fabric.Image.fromURL(dataUrl, (img) => {
+        // Check again if the canvas is still valid
+        if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+          console.warn('Canvas changed or disposed during image loading, aborting.');
+          resolve();
+          return;
+        }
+        
         if (!img || !img.width || !img.height) {
           reject(new Error('Failed to create fabric image from PSD'));
           return;
@@ -312,8 +331,14 @@ export const loadPsdOntoCanvas = async (
         img.selectable = false;
         img.evented = false;
         
-        // Add image to canvas
-        canvas.add(img);
+        // Add image to canvas - check canvas validity first
+        if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+          console.warn('Canvas changed or disposed before adding image, aborting.');
+          resolve();
+          return;
+        }
+        
+        canvasRef.add(img);
         
         // If we have design bounds, store them for reference
         if (designBounds) {
@@ -327,8 +352,15 @@ export const loadPsdOntoCanvas = async (
             bottom: imgTop + (designBounds.bottom * scale)
           };
           
+          // Check canvas validity before continuing
+          if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+            console.warn('Canvas changed or disposed before adding design bounds, aborting.');
+            resolve();
+            return;
+          }
+          
           // Store on the canvas for future reference
-          canvas.designBounds = scaledDesignBounds;
+          canvasRef.designBounds = scaledDesignBounds;
           
           // Add a visual indicator of the design area
           const boundaryRect = new fabric.Rect({
@@ -343,7 +375,15 @@ export const loadPsdOntoCanvas = async (
             selectable: false,
             evented: false
           });
-          canvas.add(boundaryRect);
+          
+          // Check canvas validity before adding rect
+          if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+            console.warn('Canvas changed or disposed before adding boundary rect, aborting.');
+            resolve();
+            return;
+          }
+          
+          canvasRef.add(boundaryRect);
           
           // Add a test text object that can be moved around
           const textOptions = {
@@ -360,7 +400,14 @@ export const loadPsdOntoCanvas = async (
           };
           
           const testText = new fabric.IText(textOptions.text, textOptions);
-          canvas.add(testText);
+          // Check canvas validity before adding text
+          if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+            console.warn('Canvas changed or disposed before adding test text, aborting.');
+            resolve();
+            return;
+          }
+          
+          canvasRef.add(testText);
           
           // Create a clip path for the text based on design bounds
           const clipPath = new fabric.Rect({
@@ -372,10 +419,25 @@ export const loadPsdOntoCanvas = async (
           });
           
           // Apply the clip path to the text
+          // Omit clip path for now to restore movability
           testText.clipPath = clipPath;
         }
         
-        canvas.renderAll();
+        // Final check before renderAll
+        if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+          console.warn('Canvas changed or disposed before final render, aborting.');
+          resolve();
+          return;
+        }
+        
+        // Try to render the canvas, with error handling
+        try {
+          canvasRef.renderAll();
+          console.log('PSD rendered successfully on canvas');
+        } catch (e) {
+          console.error('Error rendering canvas:', e);
+        }
+        
         resolve();
       });
     });
