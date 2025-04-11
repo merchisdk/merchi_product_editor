@@ -1,5 +1,5 @@
 import React from 'react';
-import { Apps, Redo, Undo } from 'grommet-icons';
+import { Apps, Redo, Undo, View } from 'grommet-icons';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { addTextToCanvas } from '../utils/canvasUtils';
 import '../styles/Toolbar.css';
@@ -11,6 +11,8 @@ export default function Toolbar() {
     setShowGrid,
     showGrid,
     height,
+    showPreview,
+    togglePreview,
   } = useProductEditor();
 
   // Add handleAddText function before the return statement
@@ -33,13 +35,25 @@ export default function Toolbar() {
           <span>{showGrid ? 'Hide Grid' : 'Show Grid'}</span>
         </div>
       </div>
+
+      {/* Preview toggle button */}
+      <div className="preview-toggle">
+        <div
+          className={`toolbar-button ${showPreview ? 'active' : ''}`}
+          onClick={togglePreview}
+        >
+          <View width={24} height={24} />
+          <span>{showPreview ? 'Hide Preview' : 'Show Preview'}</span>
+        </div>
+      </div>
+
       {/* Redo and Undo buttons */}
       <div className="toolbar-content">
         <div className="toolbar-button">
           <Undo width={24} height={24} />
           <span>Undo</span>
         </div>
-        <div className="toolbar-button" onClick={handleAddText}>
+        <div className="toolbar-button">
           <Redo width={24} height={24} />
           <span>Redo</span>
         </div>

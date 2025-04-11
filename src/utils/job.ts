@@ -14,7 +14,9 @@ import {
 
 export function findTemplatesSelectedByVarations(draftTemplates: DraftTemplate[], variations: Variation[]) {
   // filter all the selected variation values
-  const selectedVarationValues: string[] = variations.map((v: Variation) => String(v.value));
+  const selectedVarationValues: string[] = variations
+    .filter((v: Variation) => v.value !== undefined && v.value !== null && v.value !== '')
+    .map((v: Variation) => String(v.value));
 
   // return all the draft templates that have a selectedByVariationFieldOptions that includes
   // any of the selected variation values
@@ -84,14 +86,10 @@ export function canvasTemplateVariationObjects(variations: Variation[], template
 
 export function initDraftTemplates(variations: Variation[], product: Product) {
   const { draftTemplates = [] } = product;
-  console.log('Initializing draft templates from product:', { 
-    productTemplates: draftTemplates.length,
-    variations: variations.length 
-  });
   
   // Check for any templates that are selected by the variation options
   const templates = findTemplatesSelectedByVarations(draftTemplates, variations) || [];
-  console.log('Templates selected by variations:', templates.length);
+  console.log('Templates selected by variations:', templates);
 
   // If there are no templates selected, return the draft templates
   const useTemplates = templates.length ? templates : draftTemplates;
