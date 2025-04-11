@@ -4,6 +4,7 @@ import ImageNavButton from "./ImageNavButton";
 import ImageZoomModal from "./ImageZoomModal";
 import { ZoomIn } from 'grommet-icons';
 import { useProductEditor } from '../context/ProductEditorContext';
+import { useSwipeNavigate } from '../hooks/useSwipeNavigate';
 
 interface ImageGalleryProps {
   fallbackImageUrl?: string;
@@ -58,6 +59,12 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
     setCurrentImageUrl(allImages[index]?.viewUrl || '/blueman_white.png');
   };
 
+  // Use the swipe hook
+  const swipeHandlers = useSwipeNavigate({
+    onSwipeLeft: () => handleNavigation('right'),
+    onSwipeRight: () => handleNavigation('left'),
+  });
+
   const slideVariants = {
     enter: (direction: 'left' | 'right') => ({
       x: direction === 'left' ? -1000 : 1000,
@@ -77,8 +84,10 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
 
   return (
     <>
-      <div className="image-gallery-container">
-        <div className="image-container">
+      <div className="image-gallery-container relative">
+        <div
+          className="image-container overflow-hidden"
+        >
           <AnimatePresence initial={false} custom={slideDirection}>
             <motion.div
               key={currentIndex}
@@ -92,6 +101,7 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
                 opacity: { duration: 0.2 }
               }}
               className="image-slide"
+              {...swipeHandlers}
             >
               <img
                 src={currentImageUrl}
