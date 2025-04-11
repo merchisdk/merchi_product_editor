@@ -28,6 +28,7 @@ interface ProductEditorContextType {
   handleCancel: () => void;
   canvasObjects: Map<string, fabric.Object>;
   updateCanvasFromVariations: (newVariations: Variation[], newGroupVariations?: Variation[]) => void;
+  isCanvasLoading: boolean;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -71,6 +72,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   );
   const [showGrid, setShowGrid] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [isCanvasLoading, setIsCanvasLoading] = useState(true);
 
   // Function to toggle preview visibility
   const togglePreview = () => {
@@ -182,6 +184,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   useEffect(() => {
     const init = async () => {
       if (canvasRef.current) {
+        setIsCanvasLoading(true);
         const fabricCanvas = new fabric.Canvas(canvasRef.current, {
           width,
           height,
@@ -215,6 +218,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             setPreviewImageUrl(null);
           }
         });
+
+        setIsCanvasLoading(false);
 
         return () => {
           cleanupKeyboardEvents();
@@ -340,6 +345,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         handleCancel: () => onCancel(),
         canvasObjects,
         updateCanvasFromVariations,
+        isCanvasLoading,
       }}
     >
       {children}
