@@ -84,7 +84,7 @@
   padding: 5px 10px;
   width: 100%;
   box-sizing: border-box;
-  z-index: 1000;
+  z-index: 5;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
@@ -102,6 +102,8 @@ body.has-preview-modal-open .mobile-bottom-toolbar {
 
   .editor-container {
     padding: 0.5rem;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .editor-container.has-bottom-padding {
