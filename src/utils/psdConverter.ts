@@ -1,5 +1,6 @@
 import { fabric } from 'fabric';
 import { readPsd, Layer } from 'ag-psd';
+import { Variation, FieldType } from '../types';
 import { loadRegularImagePromise } from './imageUtils';
 import { drawGrid } from './grid';
 
@@ -14,6 +15,7 @@ interface ExtendedCanvas extends fabric.Canvas {
     height: number;
   };
   psdUrl?: string;
+  anythingABC?: string;
 }
 
 /**
@@ -281,6 +283,7 @@ export const extractPsdBaseLayer = async (psdUrl: string): Promise<{dataUrl: str
 export const loadPsdOntoCanvas = async (
   canvas: ExtendedCanvas, 
   psdUrl: string,
+  variations: any[],
   width: number,
   height: number
 ): Promise<void> => {
@@ -290,7 +293,6 @@ export const loadPsdOntoCanvas = async (
     
     // Store the current psdUrl on the canvas to help track which operation is active
     canvasRef.psdUrl = psdUrl;
-    console.log(canvas, psdUrl, 'inside load psd onto canvas');
     
     // Get the rendered PSD and design bounds if available
     const { dataUrl, designBounds } = await extractPsdBaseLayer(psdUrl);
@@ -387,31 +389,7 @@ export const loadPsdOntoCanvas = async (
           }
           
           canvasRef.add(boundaryRect);
-          
-          // Add a test text object that can be moved around
-          const textOptions = {
-            left: scaledDesignBounds.left + scaledDesignBounds.width / 2,
-            top: scaledDesignBounds.top + scaledDesignBounds.height / 2,
-            fontFamily: 'Arial',
-            fontSize: 30,
-            fill: '#0000FF',
-            text: 'Test Text',
-            originX: 'center', 
-            originY: 'center',
-            selectable: true,
-            evented: true
-          };
-          
-          const testText = new fabric.IText(textOptions.text, textOptions);
-          // Check canvas validity before adding text
-          if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
-            console.warn('Canvas changed or disposed before adding test text, aborting.');
-            resolve();
-            return;
-          }
-          
-          canvasRef.add(testText);
-          
+
           // Create a clip path for the text based on design bounds
           const clipPath = new fabric.Rect({
             left: scaledDesignBounds.left,
@@ -420,10 +398,149 @@ export const loadPsdOntoCanvas = async (
             height: scaledDesignBounds.height,
             absolutePositioned: true
           });
-          
-          // Apply the clip path to the text
-          // Omit clip path for now to restore movability
-          testText.clipPath = clipPath;
+
+          // Convert variations into canvas objects which obay the design bounds here
+          if (variations && variations.length > 0) {
+            // Process each variation to create appropriate canvas objects
+            variations.forEach(variation => {
+              if (!variation) {
+                return; // Skip invalid variations
+              }
+
+              // Get common positioning within design bounds
+              const objectLeft = scaledDesignBounds.left + scaledDesignBounds.width / 2;
+              const objectTop = scaledDesignBounds.top + scaledDesignBounds.height / 2;
+
+              // Extract the field type and value from the variation
+              const { canvasObjectType, files = [], fieldId, fontFamily, fontSize } = variation;
+              const value = variation.value;
+
+              // Create canvas object based on field type
+              let canvasObject;
+
+              // Handle text variations
+              if (canvasObjectType === 'text') {
+                canvasObject = new fabric.IText(value?.toString() || 'Text', {
+                  left: objectLeft,
+                  top: objectTop,
+                  fontFamily,
+                  fontSize,
+                  fill: '#000000',
+                  originX: 'center',
+                  originY: 'center',
+                  selectable: true,
+                  editable: true,
+                  text: value?.toString(),
+                });
+                
+                // Store fieldId as a custom property
+                (canvasObject as any).fieldId = fieldId;
+                canvasRef.add(canvasObject);
+                // Apply the clip path to the text
+                // Omit clip path for now to restore movability
+                canvasObject.clipPath = clipPath;
+              }
+              // Handle image variations
+              else if (canvasObjectType === "image") {
+                files.forEach((file: any) => {
+                  if (file.viewUrl) {
+                    fabric.Image.fromURL(file.viewUrl, (img) => {
+                      if (!img) return;
+
+                      // Scale image to fit within design bounds
+                      const maxWidth = scaledDesignBounds.width * 0.8;
+                      const maxHeight = scaledDesignBounds.height * 0.8;
+                      const scale = Math.min(
+                        maxWidth / img.width!,
+                        maxHeight / img.height!,
+                        1
+                      );
+                      img.scale(scale);
+
+                      // Position image
+                      img.set({
+                        left: objectLeft,
+                        top: objectTop,
+                        originX: 'center',
+                        originY: 'center',
+                        cornerSize: 8,
+                        borderColor: '#303DBF',
+                        cornerColor: '#303DBF',
+                        cornerStrokeColor: '#303DBF',
+                        transparentCorners: false,
+                        selectable: true,
+                      });
+                      
+                      // Store fieldId as a custom property
+                      (img as any).fieldId = fieldId;
+
+                      // Apply clip path
+                      const imageClipPath = new fabric.Rect({
+                        left: scaledDesignBounds.left,
+                        top: scaledDesignBounds.top,
+                        width: scaledDesignBounds.width,
+                        height: scaledDesignBounds.height,
+                        absolutePositioned: true
+                      });
+                      img.clipPath = imageClipPath;
+
+                      // Check canvas validity before adding
+                      if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+                        return;
+                      }
+                      canvasRef.add(img);
+                      canvasRef.renderAll();
+                    });
+                  }
+                });
+              }
+              // Handle color variations
+              // else if (fieldType === FieldType.COLOUR_PICKER || fieldType === FieldType.COLOUR_SELECT) {
+              //   if (value) {
+              //     canvasObject = new fabric.Rect({
+              //       left: objectLeft,
+              //       top: objectTop,
+              //       width: scaledDesignBounds.width * 0.5,
+              //       height: scaledDesignBounds.height * 0.5,
+              //       fill: value.toString(),
+              //       originX: 'center',
+              //       originY: 'center',
+              //       selectable: true,
+              //     });
+                  
+              //     // Store fieldId as a custom property
+              //     (canvasObject as any).fieldId = fieldId;
+              //   }
+              // }
+
+              // // Add the object to canvas if it was created
+              // if (canvasObject) {
+              //   // Apply clip path
+              //   const objClipPath = new fabric.Rect({
+              //     left: scaledDesignBounds.left,
+              //     top: scaledDesignBounds.top,
+              //     width: scaledDesignBounds.width,
+              //     height: scaledDesignBounds.height,
+              //     absolutePositioned: true
+              //   });
+              //   canvasObject.clipPath = objClipPath;
+
+              //   // Check canvas validity before adding
+              //   if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+              //     return;
+              //   }
+              //   canvasRef.add(canvasObject);
+              // }
+            });
+          }
+
+          // Check canvas validity before adding text
+          if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+            console.warn('Canvas changed or disposed before adding test text, aborting.');
+            resolve();
+            return;
+          }
+
         }
         
         // Final check before renderAll
@@ -435,7 +552,9 @@ export const loadPsdOntoCanvas = async (
         
         // Try to render the canvas, with error handling
         try {
-          canvasRef.renderAll();
+          if (canvasRef && canvasRef.renderAll) {
+            canvasRef.renderAll();
+          }
           console.log('PSD rendered successfully on canvas');
         } catch (e) {
           console.error('Error rendering canvas:', e);
