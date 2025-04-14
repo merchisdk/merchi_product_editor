@@ -271,6 +271,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     if (templatesHaveChanged) {
       // If the draft templates have changed, set them.
       setDraftTemplates(newDraftTemplates);
+      const template: any = draftTemplates[0]?.template;
+      setSelectedTemplate(template?.id);
       setIsCanvasLoading(true);
 
       // // Cleanup function for previous canvas
@@ -280,40 +282,44 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       if (canvasRef.current) {
         let fabricCanvas: any = canvas;
         if (!canvas?.getElement()) {
+          console.log('got in here', canvas)
           fabricCanvas = new fabric.Canvas(canvasRef.current, {
             width,
             height,
             backgroundColor: '#ffffff',
           });
         }
-
-        const template: any = newDraftTemplates[0]?.template;
         setCanvas(fabricCanvas);
-        setSelectedTemplate(template?.id);
-        loadTemplateImage(fabricCanvas, template);
 
         // Draw grid after loading the template
-        try {
-          if (fabricCanvas.getElement() && fabricCanvas.getElement().parentNode) {
-            drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
-          }
-        } catch (e) {
-          console.error('Error drawing grid during initialization:', e);
-        }
+        // try {
+        //   if (fabricCanvas.getElement() && fabricCanvas.getElement().parentNode) {
+        //     drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
+        //   }
+        // } catch (e) {
+        //   console.error('Error drawing grid during initialization:', e);
+        // }
 
-        // setup keyboard delete event
-        const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvas, () => {
-          if (document.activeElement === fabricCanvas.upperCanvasEl) {
-            onSave && onSave();
-          }
-        });
+        // // setup keyboard delete event
+        // const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvas, () => {
+        //   if (document.activeElement === fabricCanvas.upperCanvasEl) {
+        //     onSave && onSave();
+        //   }
+        // });
 
-        return () => {
-          cleanupKeyboardEvents();
-        };
+        // return () => {
+        //   cleanupKeyboardEvents();
+        // };
       }
     }
-  }, [variations, groupVariations, product, width, height, showGrid, onSave]);
+  }, [allVariations, product, width, height, showGrid, onSave]);
+
+  useEffect(() => {
+    if (canvas) {
+      const template: any = draftTemplates[0]?.template;
+      loadTemplateImage(canvas, template);
+    }
+  }, [canvas]);
 
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
   // Check if we're on a small screen
