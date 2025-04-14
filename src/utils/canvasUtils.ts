@@ -1,5 +1,5 @@
 import { fabric } from 'fabric';
-import { MerchiFile } from '../types';
+import { MerchiFile, DraftTemplate } from '../types';
 
 export const loadImageFromUrl = (
   canvas: fabric.Canvas,
@@ -36,7 +36,6 @@ export const loadImageFromUrl = (
     });
   });
 };
-
 
 /**
  * Adds an editable text object to the canvas
