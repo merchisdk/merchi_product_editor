@@ -23,6 +23,7 @@ const ProductEditor: React.FC = () => {
     selectedTemplate,
     showPreview,
     isCanvasLoading,
+    canvas,
   } = useProductEditor();
 
   const disableCanvasEvents = (e: React.MouseEvent) => {
