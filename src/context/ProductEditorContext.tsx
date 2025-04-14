@@ -2,9 +2,9 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { fabric } from 'fabric';
 import { Product, Job, DraftTemplate, Variation, DraftPreview } from '../types';
 import { drawGrid } from '../utils/grid';
-import { 
-  addVariationsToCanvas, 
-  initDraftTemplates, 
+import {
+  addVariationsToCanvas,
+  initDraftTemplates,
 } from '../utils/job';
 import { setupKeyboardEvents } from '../utils/ImageHandler';
 import { loadPsdOntoCanvas } from '../utils/psdConverter';
@@ -136,29 +136,29 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // First, let's modify handleTemplateChange to fix the regression issue
   const handleTemplateChange = (draftTemplate: DraftTemplate) => {
     if (!canvas) return;
-    
+
     // Check if this is already the selected template - prevent reloading the same template
     if (draftTemplate.id && selectedTemplate === draftTemplate.id) {
       console.log('Template already selected, skipping reload:', draftTemplate.id);
       return;
     }
-    
+
     // Update the selected template
     if (draftTemplate.id) {
       setSelectedTemplate(draftTemplate.id);
     }
-    
+
     console.log('Completely resetting canvas for new template');
-    
+
     // Create a clean canvas reference for tracking
     const currentCanvas = canvas;
-    
+
     // Create a new canvas before disposing the old one
     if (canvasRef.current) {
       // Dispose the old canvas properly
       try {
         currentCanvas.dispose();
-        
+
         // Remove any lingering canvas containers to prevent duplicates
         if (canvasRef.current.parentElement) {
           const containers = canvasRef.current.parentElement.querySelectorAll('.canvas-container');
@@ -173,16 +173,16 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       } catch (e) {
         console.error('Error during canvas cleanup:', e);
       }
-      
+
       const newCanvas = new fabric.Canvas(canvasRef.current, {
         width,
         height,
         backgroundColor: '#ffffff',
       });
-      
+
       // Update the state with the new canvas
       setCanvas(newCanvas);
-      
+
       // Now load the template image and add variations
       loadTemplateImage(newCanvas, draftTemplate).then(() => {
         // Find the template data and add variations
@@ -194,7 +194,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             draftTemplate
           );
         }
-        
+
         // Draw grid if needed
         if (showGrid) {
           try {
@@ -205,7 +205,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             console.error('Error drawing grid after template change:', e);
           }
         }
-        
+
         // Re-setup keyboard events for the new canvas
         setupKeyboardEvents(newCanvas, (dataUrl) => {
           if (document.activeElement === newCanvas.upperCanvasEl) {
@@ -227,12 +227,12 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     }
 
     const imageUrl = template.file.viewUrl;
-    
+
     // Check if this might be a PSD file
     const isPsd = imageUrl.toLowerCase().endsWith('.psd')
       || (template.file.mimetype && template.file.mimetype.includes('photoshop'));
-  
-    
+
+
     // If it's a PSD file, use our specialized function to process it
     if (isPsd) {
       // First, check if the canvas is still valid
@@ -248,72 +248,135 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         return Promise.resolve();
       } catch (error) {
         console.error('Failed to load PSD:', error);
-        
+
         // If PSD processing fails, fall back to our regular image loading
         await loadRegularImagePromise(fabricCanvas, template, width, height);
         setIsCanvasLoading(false);
         return Promise.resolve();
       }
     }
-    
+
     // For non-PSD files, use the regular image loading approach
     await loadRegularImagePromise(fabricCanvas, template, width, height);
     setIsCanvasLoading(false);
     return Promise.resolve();
   };
-  
+
   // Initialize canvas when component mounts
   useEffect(() => {
     // Build new draft templates
     const newDraftTemplates = initDraftTemplates(allVariations, product);
     // Check if any of the draft templates have changed
     const templatesHaveChanged = haveDraftTemplatesChanged(draftTemplates, newDraftTemplates);
+
+    // Check if the currently selected template ID still exists in the new list
+    const currentSelectedIdStillExists = newDraftTemplates.some(dt => dt.template.id === selectedTemplate);
+    // Store the canvas instance created in this effect run for cleanup
+    let fabricCanvasInstance: fabric.Canvas | null = null;
+
     if (templatesHaveChanged) {
+      console.log("draft templates have changed, reinitialize canva");
       // If the draft templates have changed, set them.
       setDraftTemplates(newDraftTemplates);
       setIsCanvasLoading(true);
 
-      // // Cleanup function for previous canvas
-      if (canvas) {
-        canvas.dispose();
-      }
       if (canvasRef.current) {
-        let fabricCanvas: any = canvas;
-        if (!canvas?.getElement()) {
-          fabricCanvas = new fabric.Canvas(canvasRef.current, {
-            width,
-            height,
-            backgroundColor: '#ffffff',
-          });
+        const newFabricCanvas = new fabric.Canvas(canvasRef.current, {
+          width,
+          height,
+          backgroundColor: '#ffffff',
+        });
+        // Store reference for cleanup
+        fabricCanvasInstance = newFabricCanvas;
+        // Update state
+        setCanvas(newFabricCanvas);
+
+        // Determine the template to load
+        // prioritize existing selection if still valid, otherwise default to first.
+        let templateToLoad: DraftTemplate | undefined = newDraftTemplates[0]?.template;
+        if (currentSelectedIdStillExists && selectedTemplate) {
+          const previouslySelected = newDraftTemplates.find(dt => dt.template.id === selectedTemplate);
+          if (previouslySelected) {
+            templateToLoad = previouslySelected.template;
+          } else {
+            setSelectedTemplate(templateToLoad?.id || null);
+          }
+        } else if (newDraftTemplates.length > 0) {
+          setSelectedTemplate(templateToLoad?.id || null);
+        } else {
+          setSelectedTemplate(null);
+          templateToLoad = undefined;
         }
 
-        const template: any = newDraftTemplates[0]?.template;
-        setCanvas(fabricCanvas);
-        setSelectedTemplate(template?.id);
-        loadTemplateImage(fabricCanvas, template);
-
-        // Draw grid after loading the template
-        try {
-          if (fabricCanvas.getElement() && fabricCanvas.getElement().parentNode) {
-            drawGrid(fabricCanvas, width, height, 20, '#a0a0a0', showGrid);
+        if (templateToLoad) {
+          const finalTemplateToLoad: DraftTemplate = templateToLoad;
+          loadTemplateImage(newFabricCanvas, finalTemplateToLoad).then(() => {
+            const templateData = newDraftTemplates.find(dt => dt.template.id === finalTemplateToLoad.id);
+            if (templateData) {
+              addVariationsToCanvas(
+                newFabricCanvas,
+                templateData.variationObjects,
+                finalTemplateToLoad
+              );
+            }
+            try {
+              if (newFabricCanvas.getElement() && newFabricCanvas.getElement().parentNode) {
+                drawGrid(newFabricCanvas, width, height, 20, '#a0a0a0', showGrid);
+              }
+            } catch (e) {
+              console.error('Error drawing grid during initialization:', e);
+            }
+            setIsCanvasLoading(false);
+          }).catch(error => {
+            console.error("Error loading template image:", error);
+            setIsCanvasLoading(false);
+          });
+        } else {
+          if (newFabricCanvas) {
+            newFabricCanvas.clear();
           }
-        } catch (e) {
-          console.error('Error drawing grid during initialization:', e);
+          console.log("No template determined to load.");
+          setIsCanvasLoading(false);
         }
 
         // setup keyboard delete event
-        const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvas, () => {
-          if (document.activeElement === fabricCanvas.upperCanvasEl) {
+        const cleanupKeyboardEvents = setupKeyboardEvents(newFabricCanvas, () => {
+          if (document.activeElement === newFabricCanvas.upperCanvasEl) {
             onSave && onSave();
           }
         });
 
+        // Return cleanup function for this effect run
         return () => {
           cleanupKeyboardEvents();
+          // Dispose the specific instance created in this effect run to prevent leaks.
+          if (fabricCanvasInstance) {
+            try {
+              fabricCanvasInstance.dispose();
+            } catch (e) {
+              console.error("Error disposing canvas in effect cleanup:", e);
+            }
+          }
         };
+      } else {
+        setIsCanvasLoading(false);
+        return () => { };
       }
+    } else if (!currentSelectedIdStillExists && selectedTemplate && newDraftTemplates.length > 0) {
+      const firstTemplateId = newDraftTemplates[0]?.template?.id || null;
+      if (firstTemplateId) {
+        handleTemplateChange(newDraftTemplates[0].template);
+      } else {
+        if (canvas) canvas.clear();
+        setSelectedTemplate(null);
+        setIsCanvasLoading(false);
+      }
+      return () => { };
+    } else {
+      setIsCanvasLoading(false);
+      return () => { };
     }
-  }, [variations, groupVariations, product, width, height, showGrid, onSave]);
+  }, [variations, groupVariations, product, width, height, onSave]);
 
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
   // Check if we're on a small screen
@@ -337,7 +400,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         if (!canvas.getElement() || !canvas.getElement().parentNode) {
           return;
         }
-        
+
         drawGrid(canvas, width, height, 20, '#a0a0a0', showGrid);
       } catch (error) {
         console.error('Error in drawGrid effect hook:', error);
