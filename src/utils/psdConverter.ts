@@ -1,5 +1,7 @@
 import { fabric } from 'fabric';
 import { readPsd, Layer } from 'ag-psd';
+import { loadRegularImagePromise } from './imageUtils';
+import { drawGrid } from './grid';
 
 // Extended Canvas interface with our custom properties
 interface ExtendedCanvas extends fabric.Canvas {
@@ -288,6 +290,7 @@ export const loadPsdOntoCanvas = async (
     
     // Store the current psdUrl on the canvas to help track which operation is active
     canvasRef.psdUrl = psdUrl;
+    console.log(canvas, psdUrl, 'inside load psd onto canvas');
     
     // Get the rendered PSD and design bounds if available
     const { dataUrl, designBounds } = await extractPsdBaseLayer(psdUrl);
