@@ -1,0 +1,55 @@
+.text-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.text-toolbar select {
+  padding: 5px 10px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+}
+
+.text-toolbar .color-picker {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+.text-toolbar .color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.text-toolbar .color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.text-toolbar .color-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.text-toolbar .color-picker:hover {
+  border-color: #999;
+}

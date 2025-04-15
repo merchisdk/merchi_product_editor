@@ -4,6 +4,7 @@ import FloatingToolbar from './FloatingToolbar';
 import BottomPreviewDisplay from './BottomPreviewDisplay';
 import Toolbar from './Toolbar';
 import LoadingOverlay from './LoadingOverlay';
+import TextToolbar from './TextToolbar';
 import '../styles/ProductEditor.css';
 import { fabric } from 'fabric';
 
@@ -23,6 +24,7 @@ const ProductEditor: React.FC = () => {
     selectedTemplate,
     showPreview,
     isCanvasLoading,
+    selectedTextObject,
   } = useProductEditor();
 
   const disableCanvasEvents = (e: React.MouseEvent) => {
@@ -54,6 +56,7 @@ const ProductEditor: React.FC = () => {
       )}
       <div className="main-editor-layout" style={{ position: 'relative' }}>
         <LoadingOverlay isLoading={isCanvasLoading} className="canvas-loading" />
+        {selectedTextObject && <TextToolbar />}
         <div
           className={`editor-container ${isMobileView && showPreview ? 'has-bottom-padding' : ''}`}
         >

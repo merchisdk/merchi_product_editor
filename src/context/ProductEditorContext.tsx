@@ -36,6 +36,8 @@ interface ProductEditorContextType {
   canvasObjects: Map<string, fabric.Object>;
   savedObjects: SavedCanvasObject[];
   isCanvasLoading: boolean;
+  selectedTextObject: fabric.IText | null;
+  updateSelectedText: (props: Partial<fabric.IText>) => void;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -109,6 +111,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [showGrid, setShowGrid] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
+  const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -116,6 +119,16 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Function to toggle preview visibility
   const togglePreview = () => {
     setShowPreview(prev => !prev);
+  };
+
+  // Function to update selected text object properties
+  const updateSelectedText = (props: Partial<fabric.IText>) => {
+    if (selectedTextObject && canvas) {
+      selectedTextObject.set(props);
+      canvas.requestRenderAll();
+      // Force re-render of components using this state if needed
+      setSelectedTextObject(canvas.getActiveObject() as fabric.IText);
+    }
   };
 
   const handleSave = () => {
@@ -195,6 +208,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           try {
             if (newCanvas.getElement() && newCanvas.getElement().parentNode) {
               drawGrid(newCanvas, width, height, 20, '#a0a0a0', showGrid);
+              console.log('draftTemplates');
             }
           } catch (e) {
             console.error('Error drawing grid after template change:', e);
@@ -224,7 +238,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     // Check if this might be a PSD file
     const isPsd = imageUrl.toLowerCase().endsWith('.psd')
-    || (file.mimetype && file.mimetype.includes('photoshop'));
+      || (file.mimetype && file.mimetype.includes('photoshop'));
 
     // If it's a PSD file, use our specialized function to process it
     if (isPsd) {
@@ -317,6 +331,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         }).catch(error => {
           console.error("Error loading template image:", error);
           setIsCanvasLoading(false);
+
         });
       } else {
         if (newFabricCanvas) {
@@ -330,13 +345,50 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       const cleanupKeyboardEvents = setupKeyboardEvents(newFabricCanvas, () => {
         if (document.activeElement === newFabricCanvas.upperCanvasEl) {
           onSave && onSave();
+
         }
       });
 
-      // Return cleanup function for this effect run
+      // Add Text Toolbar Event Listener
+      const handleSelection = (e: fabric.IEvent) => {
+        const activeObject = newFabricCanvas.getActiveObject();
+        // Check if the active object is an IText instance
+        if (activeObject instanceof fabric.IText) {
+          setSelectedTextObject(activeObject);
+        } else {
+          setSelectedTextObject(null);
+        }
+      };
+
+      const handleSelectionCleared = () => {
+        setSelectedTextObject(null);
+      };
+
+      newFabricCanvas.on('selection:created', handleSelection);
+      newFabricCanvas.on('selection:updated', handleSelection);
+      newFabricCanvas.on('selection:cleared', handleSelectionCleared);
+
+      // Initial draw grid
+      if (showGrid && fabricCanvasInstance) {
+        try {
+          if (fabricCanvasInstance.getElement() && fabricCanvasInstance.getElement().parentNode) {
+            drawGrid(fabricCanvasInstance, width, height, 20, '#a0a0a0', showGrid);
+          }
+        } catch (e) {
+          console.error('Error drawing initial grid:', e);
+        }
+      }
+
+      // Cleanup function for this effect run
       return () => {
+        console.log("Cleaning up canvas effect");
+        if (fabricCanvasInstance) {
+          fabricCanvasInstance.off('selection:created', handleSelection);
+          fabricCanvasInstance.off('selection:updated', handleSelection);
+          fabricCanvasInstance.off('selection:cleared', handleSelectionCleared);
+        }
+        // Dispose of the canvas instance created in this effect run
         cleanupKeyboardEvents();
-        // Dispose the specific instance created in this effect run to prevent leaks.
         if (fabricCanvasInstance) {
           try {
             fabricCanvasInstance.dispose();
@@ -417,6 +469,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         canvasObjects,
         savedObjects,
         isCanvasLoading,
+        selectedTextObject,
+        updateSelectedText,
       }}
     >
       {children}
