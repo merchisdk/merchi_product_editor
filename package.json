@@ -31,7 +31,9 @@
     "fabric": "^5.5.1",
     "framer-motion": "^12.6.3",
     "grommet-icons": "^4.12.4",
+    "lodash": "^4.17.21",
     "psd.js": "^3.9.1",
+    "react-hook-form": "^7.55.0",
     "react-icons": "^5.5.0"
   },
   "devDependencies": {
