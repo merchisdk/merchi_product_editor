@@ -56,10 +56,10 @@ const ProductEditor: React.FC = () => {
       )}
       <div className="main-editor-layout" style={{ position: 'relative' }}>
         <LoadingOverlay isLoading={isCanvasLoading} className="canvas-loading" />
-        {selectedTextObject && <TextToolbar />}
         <div
           className={`editor-container ${isMobileView && showPreview ? 'has-bottom-padding' : ''}`}
         >
+          {selectedTextObject && <TextToolbar />}
           <div className="canvas-area" onClick={disableCanvasEvents}>
             <canvas ref={canvasRef} />
           </div>

@@ -14,7 +14,7 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0;
-  margin-bottom: -1px;
+  margin-bottom: 0;
   z-index: 2;
   width: 100%;
   max-width: 550px;
