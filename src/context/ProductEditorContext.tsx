@@ -112,6 +112,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [showPreview, setShowPreview] = useState(true);
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
+  const [updateCounter, setUpdateCounter] = useState(0);
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -126,8 +127,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     if (selectedTextObject && canvas) {
       selectedTextObject.set(props);
       canvas.requestRenderAll();
-      // Force re-render of components using this state if needed
-      setSelectedTextObject(canvas.getActiveObject() as fabric.IText);
+      setUpdateCounter(c => c + 1);
     }
   };
 

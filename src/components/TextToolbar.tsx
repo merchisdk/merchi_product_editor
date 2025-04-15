@@ -1,5 +1,8 @@
 import React from 'react';
+import Select from 'react-select';
 import { useProductEditor } from '../context/ProductEditorContext';
+import { FontOption, fontOptions } from '../config/fontConfig';
+import { customStyles } from '../styles/textToolbarSelectStyles';
 import '../styles/TextToolbar.css';
 
 const TextToolbar: React.FC = () => {
@@ -9,28 +12,33 @@ const TextToolbar: React.FC = () => {
     return null;
   }
 
-  const currentFont = selectedTextObject.fontFamily || 'Nunito';
+  const currentFontValue = selectedTextObject.fontFamily || 'Nunito';
   const currentColor = typeof selectedTextObject.fill === 'string' ? selectedTextObject.fill : '#000000';
 
-  const handleFontChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newFont = event.target.value;
-    updateSelectedText({ fontFamily: newFont });
+  const handleFontChange = (selectedOption: FontOption | null) => {
+    if (selectedOption) {
+      updateSelectedText({ fontFamily: selectedOption.value });
+    }
   };
 
   const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newColor = event.target.value;
-    updateSelectedText({ fill: newColor });
+    updateSelectedText({ fill: event.target.value });
   };
 
-  const fontOptions = ['Nunito', 'Arial', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia'];
+  const currentFontOption = fontOptions.find(option => option.value === currentFontValue) || fontOptions[0];
 
   return (
     <div className="text-toolbar">
-      <select value={currentFont} onChange={handleFontChange}>
-        {fontOptions.map(font => (
-          <option key={font} value={font}>{font}</option>
-        ))}
-      </select>
+      <Select<FontOption>
+        options={fontOptions}
+        styles={customStyles}
+        value={currentFontOption}
+        onChange={handleFontChange}
+        isSearchable={true}
+        placeholder="Select or search font..."
+        className="react-select-container"
+        classNamePrefix="react-select"
+      />
       <input
         type="color"
         value={currentColor}
