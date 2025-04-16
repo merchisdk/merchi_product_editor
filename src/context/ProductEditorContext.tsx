@@ -222,7 +222,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       const newAllVariations = variationsGroups?.[groupIndex]?.variations
         ? [...variationsGroups[groupIndex].variations]
         : variations || [];
-      
+      console.log('newAllVariations', newAllVariations);
+
       // Store in ref to avoid triggering effects
       allVariationsRef.current = newAllVariations;
 
@@ -322,6 +323,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     
     // Subscribe to form changes
     const subscription = hookForm.watch((value: any) => {
+      console.log('value', value);
       debouncedWatch({
         variationsGroups: value.variationsGroups,
         variations: value.variations
@@ -331,8 +333,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     // Clean up subscription
     return () => subscription.unsubscribe();
   }, [hookForm, debouncedWatch]);
-
-  // Initialize canvas when component mounts - without variations dependency
   // useEffect(() => {
   //   // Build new draft templates
   //   if (canvasRef.current) {
