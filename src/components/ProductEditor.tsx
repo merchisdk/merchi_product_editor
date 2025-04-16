@@ -5,6 +5,7 @@ import BottomPreviewDisplay from './BottomPreviewDisplay';
 import Toolbar from './Toolbar';
 import LoadingOverlay from './LoadingOverlay';
 import '../styles/ProductEditor.css';
+import { fabric } from 'fabric';
 
 // Placeholder for the preview images
 const placeholderPreviews = [
@@ -51,13 +52,12 @@ const ProductEditor: React.FC = () => {
           ))}
         </div>
       )}
-
       <div className="main-editor-layout" style={{ position: 'relative' }}>
+        <LoadingOverlay isLoading={isCanvasLoading} className="canvas-loading" />
         <div
           className={`editor-container ${isMobileView && showPreview ? 'has-bottom-padding' : ''}`}
         >
           <div className="canvas-area" onClick={disableCanvasEvents}>
-            <LoadingOverlay isLoading={isCanvasLoading} className="canvas-loading" />
             <canvas ref={canvasRef} />
           </div>
           {!isMobileView && <FloatingToolbar />}

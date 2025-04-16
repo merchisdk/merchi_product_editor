@@ -30,6 +30,8 @@ export interface MerchiFile {
   downloadUrlExpires?: Date | null;
   viewUrl: string;
   downloadUrl?: string;
+  thumbnailUrl?: string;
+  previewUrl?: string;
 }
 
 export interface DraftTemplate {
