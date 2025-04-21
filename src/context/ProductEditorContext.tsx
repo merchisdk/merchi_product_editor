@@ -36,6 +36,8 @@ interface ProductEditorContextType {
   canvasObjects: Map<string, fabric.Object>;
   savedObjects: SavedCanvasObject[];
   isCanvasLoading: boolean;
+  selectedTextObject: fabric.IText | null;
+  updateSelectedText: (props: Partial<fabric.IText>) => void;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -109,6 +111,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [showGrid, setShowGrid] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
+  const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
+  const [updateCounter, setUpdateCounter] = useState(0);
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -116,6 +120,15 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Function to toggle preview visibility
   const togglePreview = () => {
     setShowPreview(prev => !prev);
+  };
+
+  // Function to update selected text object properties
+  const updateSelectedText = (props: Partial<fabric.IText>) => {
+    if (selectedTextObject && canvas) {
+      selectedTextObject.set(props);
+      canvas.requestRenderAll();
+      setUpdateCounter(c => c + 1);
+    }
   };
 
   const handleSave = () => {
@@ -179,6 +192,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
       // Now load the template image and add variations
       const templateData = draftTemplates.find(dt => dt.template.id === draftTemplate.id);
+      
       await renderEditorOrPreview(
         newCanvas,
         draftTemplate,
@@ -274,6 +288,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       if (templateToLoad) {
         const finalTemplateToLoad: DraftTemplate = templateToLoad;
         const templateData = newDraftTemplates.find(dt => dt.template.id === finalTemplateToLoad.id);
+
         await renderEditorOrPreview(
           fabricCanvasInstance,
           finalTemplateToLoad,
@@ -298,14 +313,54 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         console.log('inside clean');
         if (fabricCanvasInstance && document.activeElement === fabricCanvasInstance.upperCanvasEl) {
           onSave && onSave();
+
         }
       });
 
-      // Return cleanup function for this effect run
+      // Add Text Toolbar Event Listener
+      const handleSelection = (e: fabric.IEvent) => {
+        const activeObject = newFabricCanvas.getActiveObject();
+        // Check if the active object is an IText instance
+        if (activeObject instanceof fabric.IText) {
+          setSelectedTextObject(activeObject);
+        } else {
+          setSelectedTextObject(null);
+        }
+      };
+
+      const handleSelectionCleared = () => {
+        setSelectedTextObject(null);
+      };
+
+      newFabricCanvas.on('selection:created', handleSelection);
+      newFabricCanvas.on('selection:updated', handleSelection);
+      newFabricCanvas.on('selection:cleared', handleSelectionCleared);
+
+      // Initial draw grid
+      if (showGrid && fabricCanvasInstance) {
+        try {
+          if (fabricCanvasInstance.getElement() && fabricCanvasInstance.getElement().parentNode) {
+            drawGrid(fabricCanvasInstance, width, height, 20, '#a0a0a0', showGrid);
+          }
+        } catch (e) {
+          console.error('Error drawing initial grid:', e);
+        }
+      }
+
+      // Cleanup function for this effect run
       return () => {
+        console.log("Cleaning up canvas effect");
+        if (fabricCanvasInstance) {
+          fabricCanvasInstance.off('selection:created', handleSelection);
+          fabricCanvasInstance.off('selection:updated', handleSelection);
+          fabricCanvasInstance.off('selection:cleared', handleSelectionCleared);
+        }
+        // Dispose of the canvas instance created in this effect run
         cleanupKeyboardEvents();
+
         console.log('inside return ');
         // Dispose the specific instance created in this effect run to prevent leaks.
+
         if (fabricCanvasInstance) {
           try {
             fabricCanvasInstance.dispose();
@@ -504,6 +559,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         canvasObjects,
         savedObjects,
         isCanvasLoading,
+        selectedTextObject,
+        updateSelectedText,
       }}
     >
       {children}
