@@ -11,7 +11,7 @@ const TextToolbar: React.FC = () => {
     selectedTextObject,
     updateSelectedText,
     fontOptions,
-    colorPalette
+    colorPalette,
   } = useProductEditor();
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'palette' | 'custom'>('palette');
@@ -70,6 +70,14 @@ const TextToolbar: React.FC = () => {
   };
 
   const currentFontOption = fontOptions.find(option => option.value === currentFontValue) || fontOptions[0];
+
+  // Handler for underline toggle
+  const handleUnderlineClick = () => {
+    if (!selectedTextObject) return;
+    // IText supports underline boolean
+    const isUnderlined = selectedTextObject.underline === true;
+    updateSelectedText({ underline: !isUnderlined });
+  };
 
   return (
     <div className="text-toolbar">
@@ -148,6 +156,16 @@ const TextToolbar: React.FC = () => {
           </div>
         </div>
       )}
+      <button type="button"
+        className={`toolbar-button bold-button ${selectedTextObject.fontWeight === 'bold' ? 'active' : ''}`}
+        onClick={() => updateSelectedText({ fontWeight: selectedTextObject.fontWeight === 'bold' ? 'normal' : 'bold' })}
+        title="Bold"
+      ><strong>B</strong></button>
+      <button type="button"
+        className={`toolbar-button underline-button ${selectedTextObject.underline ? 'active' : ''}`}
+        onClick={handleUnderlineClick}
+        title="Underline"
+      ><u>U</u></button>
     </div>
   );
 };
