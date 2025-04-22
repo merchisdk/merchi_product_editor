@@ -42,6 +42,8 @@ interface ProductEditorContextType {
   updateSelectedText: (props: Partial<fabric.IText>) => void;
   fontOptions: FontOption[];
   colorPalette: (string | null)[][];
+  showLayerPanel: boolean;
+  toggleLayerPanel: () => void;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -121,6 +123,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
   const [updateCounter, setUpdateCounter] = useState(0);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -128,6 +131,11 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Function to toggle preview visibility
   const togglePreview = () => {
     setShowPreview(prev => !prev);
+  };
+
+  // Function to toggle layer panel visibility
+  const toggleLayerPanel = () => {
+    setShowLayerPanel(prev => !prev);
   };
 
   // Function to update selected text object properties
@@ -570,6 +578,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         updateSelectedText,
         fontOptions,
         colorPalette,
+        showLayerPanel,
+        toggleLayerPanel,
       }}
     >
       {children}
