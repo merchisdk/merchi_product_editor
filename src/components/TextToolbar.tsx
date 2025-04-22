@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Select from 'react-select';
 import { ChromePicker, ColorResult } from 'react-color';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { FontOption } from '../config/fontConfig';
 import { customStyles } from '../styles/textToolbarSelectStyles';
 import '../styles/TextToolbar.css';
+import { FormatButtons } from './FormatButtons';
+import { AlignMenu } from './AlignMenu';
 
 const TextToolbar: React.FC = () => {
   const {
@@ -21,18 +23,13 @@ const TextToolbar: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
         setDisplayColorPicker(false);
-        setPickerMode('palette');
       }
     };
-    if (displayColorPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [displayColorPicker]);
+  }, []);
 
   if (!selectedTextObject || !updateSelectedText) {
     return null;
@@ -67,17 +64,10 @@ const TextToolbar: React.FC = () => {
 
   const handleCustomTriggerClick = () => {
     setPickerMode('custom');
+    setDisplayColorPicker(true);
   };
 
   const currentFontOption = fontOptions.find(option => option.value === currentFontValue) || fontOptions[0];
-
-  // Handler for underline toggle
-  const handleUnderlineClick = () => {
-    if (!selectedTextObject) return;
-    // IText supports underline boolean
-    const isUnderlined = selectedTextObject.underline === true;
-    updateSelectedText({ underline: !isUnderlined });
-  };
 
   return (
     <div className="text-toolbar">
@@ -156,16 +146,9 @@ const TextToolbar: React.FC = () => {
           </div>
         </div>
       )}
-      <button type="button"
-        className={`toolbar-button bold-button ${selectedTextObject.fontWeight === 'bold' ? 'active' : ''}`}
-        onClick={() => updateSelectedText({ fontWeight: selectedTextObject.fontWeight === 'bold' ? 'normal' : 'bold' })}
-        title="Bold"
-      ><strong>B</strong></button>
-      <button type="button"
-        className={`toolbar-button underline-button ${selectedTextObject.underline ? 'active' : ''}`}
-        onClick={handleUnderlineClick}
-        title="Underline"
-      ><u>U</u></button>
+
+      <FormatButtons />
+      <AlignMenu />
     </div>
   );
 };
