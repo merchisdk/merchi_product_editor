@@ -10,6 +10,8 @@ import { renderEditorOrPreview } from '../utils/renderUtils';
 import { setupKeyboardEvents } from '../utils/ImageHandler';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { debounce } from 'lodash';
+import { FontOption, defaultFontOptions } from '../config/fontConfig';
+import { defaultPalette } from '../config/colorConfig';
 
 interface ProductEditorContextType {
   canvas: fabric.Canvas | null;
@@ -38,6 +40,8 @@ interface ProductEditorContextType {
   isCanvasLoading: boolean;
   selectedTextObject: fabric.IText | null;
   updateSelectedText: (props: Partial<fabric.IText>) => void;
+  fontOptions: FontOption[];
+  colorPalette: (string | null)[][];
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -52,6 +56,8 @@ interface ProductEditorProviderProps {
   onSave: () => void;
   onCancel: () => void;
   hookForm?: any; // Add the form methods prop
+  fontOptions?: FontOption[];
+  colorPalette?: (string | null)[][];
 }
 
 interface SavedCanvasObject {
@@ -84,18 +90,20 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   onSave,
   onCancel,
   hookForm = null, // Initialize with null
+  fontOptions = defaultFontOptions,
+  colorPalette = defaultPalette,
 }) => {
   const { watch } = hookForm;
-  
+
   // Create refs to store the latest values to prevent excessive re-renders
   const allVariationsRef = useRef<any[]>([]);
   const productRef = useRef(product);
-  
+
   // Update product ref when it changes
   useEffect(() => {
     productRef.current = product;
   }, [product]);
-  
+
   const [
     draftTemplates,
     setDraftTemplates
@@ -192,7 +200,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
       // Now load the template image and add variations
       const templateData = draftTemplates.find(dt => dt.template.id === draftTemplate.id);
-      
+
       await renderEditorOrPreview(
         newCanvas,
         draftTemplate,
@@ -231,7 +239,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       // Extract the variations from the watch values
       const variationsGroups = watchValues.variationsGroups;
       const variations = watchValues.variations;
-      
+
       // Process the latest variations to update allVariationsRef
       const newAllVariations = variationsGroups?.[groupIndex]?.variations
         ? [...variationsGroups[groupIndex].variations]
@@ -243,12 +251,12 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
       const newDraftTemplates = initDraftTemplates(newAllVariations, productRef.current);
 
-        // Check if the currently selected template ID still exists in the new list
+      // Check if the currently selected template ID still exists in the new list
       const currentSelectedIdStillExists = newDraftTemplates.some(dt => dt.template.id === selectedTemplate);
 
       // Store the canvas instance created in this effect run for cleanup
       let fabricCanvasInstance: fabric.Canvas | null = canvas;
-      
+
       // Only update if they've actually changed
       if (haveDraftTemplatesChanged(draftTemplates, newDraftTemplates)) {
         setDraftTemplates(newDraftTemplates);
@@ -313,13 +321,12 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         console.log('inside clean');
         if (fabricCanvasInstance && document.activeElement === fabricCanvasInstance.upperCanvasEl) {
           onSave && onSave();
-
         }
       });
 
       // Add Text Toolbar Event Listener
       const handleSelection = (e: fabric.IEvent) => {
-        const activeObject = newFabricCanvas.getActiveObject();
+        const activeObject = fabricCanvasInstance?.getActiveObject();
         // Check if the active object is an IText instance
         if (activeObject instanceof fabric.IText) {
           setSelectedTextObject(activeObject);
@@ -332,9 +339,9 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         setSelectedTextObject(null);
       };
 
-      newFabricCanvas.on('selection:created', handleSelection);
-      newFabricCanvas.on('selection:updated', handleSelection);
-      newFabricCanvas.on('selection:cleared', handleSelectionCleared);
+      fabricCanvasInstance?.on('selection:created', handleSelection);
+      fabricCanvasInstance?.on('selection:updated', handleSelection);
+      fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
 
       // Initial draw grid
       if (showGrid && fabricCanvasInstance) {
@@ -371,11 +378,11 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       };
     }, 500);
   }, [groupIndex, draftTemplates]);
-  
+
   // Set up the debounced watch subscription
   useEffect(() => {
     if (!hookForm) return;
-    
+
     // Subscribe to form changes
     const subscription = hookForm.watch((value: any) => {
       console.log('value', value);
@@ -384,7 +391,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         variations: value.variations
       });
     });
-    
+
     // Clean up subscription
     return () => subscription.unsubscribe();
   }, [hookForm, debouncedWatch]);
@@ -561,6 +568,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         isCanvasLoading,
         selectedTextObject,
         updateSelectedText,
+        fontOptions,
+        colorPalette,
       }}
     >
       {children}

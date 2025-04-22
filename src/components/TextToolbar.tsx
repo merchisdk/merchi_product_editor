@@ -2,13 +2,17 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Select from 'react-select';
 import { ChromePicker, ColorResult } from 'react-color';
 import { useProductEditor } from '../context/ProductEditorContext';
-import { FontOption, fontOptions } from '../config/fontConfig';
-import { defaultPalette } from '../config/colorConfig';
+import { FontOption } from '../config/fontConfig';
 import { customStyles } from '../styles/textToolbarSelectStyles';
 import '../styles/TextToolbar.css';
 
 const TextToolbar: React.FC = () => {
-  const { selectedTextObject, updateSelectedText } = useProductEditor();
+  const {
+    selectedTextObject,
+    updateSelectedText,
+    fontOptions,
+    colorPalette
+  } = useProductEditor();
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'palette' | 'custom'>('palette');
   const colorPickerRef = useRef<HTMLDivElement>(null);
@@ -93,7 +97,7 @@ const TextToolbar: React.FC = () => {
           <div className="color-picker-popover">
             {pickerMode === 'palette' ? (
               <div className="palette-grid">
-                {defaultPalette.flat().map((color, index) => {
+                {colorPalette.flat().map((color, index) => {
                   if (color === null) {
                     return (
                       <button
