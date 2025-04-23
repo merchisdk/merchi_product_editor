@@ -88,9 +88,10 @@
 }
 
 .layer-item.is-dragging-item {
-  opacity: 0.6;
+  opacity: 0;
   background-color: #d0d8e3;
   cursor: grabbing;
+  transition: none;
 }
 
 .layer-icon {
@@ -141,4 +142,8 @@
 
 .layer-item:active .layer-drag-indicator {
   cursor: grabbing;
+}
+
+.layer-list.is-dragging-active .layer-item {
+  transition: transform 0.2s ease;
 }

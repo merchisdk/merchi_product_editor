@@ -11,12 +11,15 @@ const reorder = (list: any[], startIndex: number, endIndex: number) => {
   return result;
 };
 
+const LAYER_ITEM_HEIGHT_PX = 45;
+
 const LayerPanel: React.FC = () => {
   const { canvas, toggleLayerPanel, selectedObjectId, selectObject } = useProductEditor();
   const [layers, setLayers] = useState<fabric.Object[]>([]);
   const dragItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
-  const [dragging, setDragging] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [dragOverIndexVisual, setDragOverIndexVisual] = useState<number | null>(null);
 
   useEffect(() => {
     if (canvas) {
@@ -27,19 +30,22 @@ const LayerPanel: React.FC = () => {
         setLayers([...filteredObjects].reverse());
       };
       updateLayers();
-      canvas.on('object:added', updateLayers);
-      canvas.on('object:removed', updateLayers);
-      canvas.on('stack:changed', updateLayers);
-      canvas.on('selection:created', updateLayers);
-      canvas.on('selection:updated', updateLayers);
-      canvas.on('selection:cleared', updateLayers);
+
+      const handleCanvasChange = () => updateLayers();
+      canvas.on('object:added', handleCanvasChange);
+      canvas.on('object:removed', handleCanvasChange);
+      canvas.on('stack:changed', handleCanvasChange);
+      canvas.on('selection:created', handleCanvasChange);
+      canvas.on('selection:updated', handleCanvasChange);
+      canvas.on('selection:cleared', handleCanvasChange);
+
       return () => {
-        canvas.off('object:added', updateLayers);
-        canvas.off('object:removed', updateLayers);
-        canvas.off('stack:changed', updateLayers);
-        canvas.off('selection:created', updateLayers);
-        canvas.off('selection:updated', updateLayers);
-        canvas.off('selection:cleared', updateLayers);
+        canvas.off('object:added', handleCanvasChange);
+        canvas.off('object:removed', handleCanvasChange);
+        canvas.off('stack:changed', handleCanvasChange);
+        canvas.off('selection:created', handleCanvasChange);
+        canvas.off('selection:updated', handleCanvasChange);
+        canvas.off('selection:cleared', handleCanvasChange);
       };
     }
   }, [canvas]);
@@ -65,57 +71,58 @@ const LayerPanel: React.FC = () => {
   const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
     dragItemIndex.current = index;
     e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => setDragging(true), 0);
+    setTimeout(() => setIsDraggingOver(true), 0);
   };
 
-  const handleDragEnter = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+  const handleDragEnterItem = (e: React.DragEvent<HTMLLIElement>, index: number) => {
     e.preventDefault();
     dragOverItemIndex.current = index;
+    setDragOverIndexVisual(index);
   };
 
-  const handleDragLeave = (e: React.DragEvent<HTMLLIElement>) => {
-
+  const handleDragLeaveList = (e: React.DragEvent<HTMLUListElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      dragOverItemIndex.current = null;
+      setDragOverIndexVisual(null);
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
+  const handleDragOverList = (e: React.DragEvent<HTMLUListElement>) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLUListElement>) => {
     e.preventDefault();
-    if (dragItemIndex.current === null || dragOverItemIndex.current === null || dragItemIndex.current === dragOverItemIndex.current) {
-      setDragging(false);
-      dragItemIndex.current = null;
-      dragOverItemIndex.current = null;
-      return;
-    }
-
     const sourceIndex = dragItemIndex.current;
     const destinationIndex = dragOverItemIndex.current;
 
-    const reorderedLayers = reorder(
-      layers,
-      sourceIndex,
-      destinationIndex
-    );
+    setIsDraggingOver(false);
+    setDragOverIndexVisual(null);
+    dragItemIndex.current = null;
+    dragOverItemIndex.current = null;
+
+    if (sourceIndex === null || destinationIndex === null || sourceIndex === destinationIndex) {
+      return;
+    }
+
+    const reorderedLayers = reorder(layers, sourceIndex, destinationIndex);
+
+    const objectToMove = layers[sourceIndex];
+
     setLayers(reorderedLayers);
 
-    if (canvas) {
-      const objectToMove = layers[sourceIndex];
+    if (canvas && objectToMove) {
       const totalObjects = canvas.getObjects().length;
       const fabricTargetIndex = totalObjects - 1 - destinationIndex;
       canvas.moveTo(objectToMove, fabricTargetIndex);
       canvas.requestRenderAll();
     }
-
-    dragItemIndex.current = null;
-    dragOverItemIndex.current = null;
-    setDragging(false);
   };
 
   const handleDragEnd = (e: React.DragEvent<HTMLLIElement>) => {
-    setDragging(false);
+    setIsDraggingOver(false);
+    setDragOverIndexVisual(null);
     dragItemIndex.current = null;
     dragOverItemIndex.current = null;
   };
@@ -125,33 +132,48 @@ const LayerPanel: React.FC = () => {
   };
 
   return (
-    <div className={`layer-panel ${dragging ? 'is-dragging-panel' : ''}`}>
+    <div className={`layer-panel`}>
       <div className="layer-panel-header">
-        <p>Layers</p>
+        <h3>Layers</h3>
         <button onClick={toggleLayerPanel} className="close-button" title="Close Panel">
           <Close size="small" />
         </button>
       </div>
       <ul
-        className="layer-list"
-        onDragOver={handleDragOver}
+        className={`layer-list ${isDraggingOver ? 'is-dragging-active' : ''}`}
+        onDragOver={handleDragOverList}
         onDrop={handleDrop}
+        onDragLeave={handleDragLeaveList}
       >
         {layers.map((layer, index) => {
           const layerInfo = getLayerInfo(layer);
           const layerId = (layer as any).id;
           const isSelected = layerId && layerId === selectedObjectId;
-          const isBeingDragged = dragging && dragItemIndex.current === index;
+          const isDraggingThisItem = isDraggingOver && dragItemIndex.current === index;
+
+          let transformStyle = 'translateY(0px)';
+          if (isDraggingOver && dragItemIndex.current !== null && dragOverIndexVisual !== null && !isDraggingThisItem) {
+            const draggingFromIndex = dragItemIndex.current;
+            const hoveringOverIndex = dragOverIndexVisual;
+
+            if (index > draggingFromIndex && index <= hoveringOverIndex) {
+              transformStyle = `translateY(-${LAYER_ITEM_HEIGHT_PX}px)`;
+            }
+            else if (index < draggingFromIndex && index >= hoveringOverIndex) {
+              transformStyle = `translateY(${LAYER_ITEM_HEIGHT_PX}px)`;
+            }
+          }
+
           return (
             <li
               key={`layer-${layerId || index}`}
               draggable
               onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnter={(e) => handleDragEnter(e, index)}
-              onDragLeave={handleDragLeave}
+              onDragEnter={(e) => handleDragEnterItem(e, index)}
               onDragEnd={handleDragEnd}
               onClick={() => handleLayerClick(layer)}
-              className={`layer-item ${isSelected ? 'selected' : ''} ${isBeingDragged ? 'is-dragging-item' : ''}`}
+              className={`layer-item ${isSelected ? 'selected' : ''} ${isDraggingThisItem ? 'is-dragging-item' : ''}`}
+              style={{ transform: transformStyle }}
             >
               <span className="layer-icon">{layerInfo.icon}</span>
               <span className="layer-name">{layerInfo.name}</span>
