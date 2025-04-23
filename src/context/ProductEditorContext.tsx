@@ -207,6 +207,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         width,
         height,
         backgroundColor: '#ffffff',
+        // not to bring the selected object to the top visually
+        preserveObjectStacking: true
       });
 
       // Update the state with the new canvas
@@ -288,6 +290,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           width,
           height,
           backgroundColor: '#ffffff',
+          preserveObjectStacking: true
         });
         // Update state
         setCanvas(fabricCanvasInstance);
