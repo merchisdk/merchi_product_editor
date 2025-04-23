@@ -116,14 +116,21 @@ export const uploadImage = (
  */
 export const setupKeyboardEvents = (
   canvas: fabric.Canvas,
-  onObjectRemoved?: (dataUrl: string) => void
+  onObjectRemoved?: (dataUrl: string) => void,
+  customDeleteHandler?: (obj: fabric.Object) => void
 ) => {
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Delete') {
       const activeObject = canvas.getActiveObject();
       if (activeObject) {
-        canvas.remove(activeObject);
-        canvas.renderAll();
+        // If a custom delete handler is provided, use it instead
+        if (customDeleteHandler) {
+          customDeleteHandler(activeObject);
+        } else {
+          // Otherwise use default removal
+          canvas.remove(activeObject);
+          canvas.renderAll();
+        }
 
         if (onObjectRemoved) {
           const dataUrl = canvas.toDataURL({

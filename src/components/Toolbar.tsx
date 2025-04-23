@@ -15,6 +15,8 @@ export default function Toolbar() {
     togglePreview,
     showLayerPanel,
     toggleLayerPanel,
+    deleteObject,
+    selectedObjectId
   } = useProductEditor();
 
   // Add handleAddText function before the return statement
@@ -24,6 +26,15 @@ export default function Toolbar() {
   };
 
   const toggleGrid = () => setShowGrid(!showGrid);
+
+  // Handle delete button click
+  const handleDelete = () => {
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      deleteObject(activeObject);
+    }
+  };
 
   return (
     <>
@@ -59,7 +70,10 @@ export default function Toolbar() {
       </div>
 
       {/* Delete button */}
-      <div className="toolbar-button">
+      <div
+        className={`toolbar-button ${!selectedObjectId ? 'disabled' : ''}`}
+        onClick={handleDelete}
+      >
         <Trash width={24} height={24} />
         <span>Delete</span>
       </div>

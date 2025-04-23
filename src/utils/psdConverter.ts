@@ -420,7 +420,11 @@ export const loadPsdOntoCanvas = async (
 
               // Handle text variations
               if (canvasObjectType === 'text') {
-                canvasObject = new fabric.IText(value?.toString() || 'Text', {
+                // Ensure the string passed to IText constructor is valid
+                const textValue = typeof value === 'string' ? value :
+                  value != null ? String(value) : 'Text';
+
+                canvasObject = new fabric.IText(textValue, {
                   left: objectLeft,
                   top: objectTop,
                   fontFamily,
@@ -430,7 +434,7 @@ export const loadPsdOntoCanvas = async (
                   originY: 'center',
                   selectable: true,
                   editable: true,
-                  text: value?.toString(),
+                  text: textValue,
                 });
 
                 // Store fieldId as a custom property
