@@ -1,41 +1,4 @@
 import { fabric } from 'fabric';
-import { MerchiFile, DraftTemplate } from '../types';
-
-export const loadImageFromUrl = (
-  canvas: fabric.Canvas,
-  viewUrl: string,
-  width: number,
-  height: number
-): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    fabric.Image.fromURL(viewUrl, (img) => {
-      if (!img) {
-        reject(new Error('Failed to load image'));
-        return;
-      }
-
-      // Scale image to fit canvas while maintaining aspect ratio
-      const scale = Math.min(
-        width / img.width!,
-        height / img.height!
-      );
-      img.scale(scale);
-
-      // Center the image
-      img.set({
-        left: (width - img.width! * scale) / 2,
-        top: (height - img.height! * scale) / 2,
-        selectable: false,
-        evented: false,
-      });
-
-      canvas.add(img);
-      canvas.sendToBack(img);
-      canvas.renderAll();
-      resolve();
-    });
-  });
-};
 
 /**
  * Adds an editable text object to the canvas
@@ -107,57 +70,5 @@ export const addTextToCanvas = (
   } catch (error) {
     console.error('Error adding text to canvas:', error);
     return null;
-  }
-};
-
-export const addFilesToCanvas = async (
-  canvas: fabric.Canvas,
-  files: MerchiFile[],
-  width: number,
-  height: number
-): Promise<void> => {
-  if (!canvas || !files.length) return;
-
-  for (const file of files) {
-    if (!file.viewUrl) continue;
-
-    await new Promise<void>((resolve) => {
-      if (!file.viewUrl) {
-        resolve();
-        return;
-      }
-      fabric.Image.fromURL(file.viewUrl, (img) => {
-        if (!img) {
-          resolve();
-          return;
-        }
-
-        // Scale image to fit canvas while maintaining aspect ratio
-        const scale = Math.min(
-          (width * 0.5) / img.width!,
-          (height * 0.5) / img.height!,
-          1
-        );
-        img.scale(scale);
-
-        // Center the image
-        img.set({
-          left: width / 2,
-          top: height / 2,
-          cornerSize: 8,
-          borderColor: '#303DBF',
-          cornerColor: '#303DBF',
-          cornerStrokeColor: '#303DBF',
-          transparentCorners: false,
-          selectable: true,
-          evented: true
-        });
-
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-        resolve();
-      });
-    });
   }
 };
