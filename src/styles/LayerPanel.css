@@ -34,11 +34,12 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 2px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   color: #555;
+  margin-top: -5px;
+  margin-right: 5px;
 }
 
 .layer-list {
@@ -61,6 +62,21 @@
   background-color: transparent;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.layer-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 15px;
+  right: 15px;
+  height: 1px;
+  background-color: #f0f0f0;
+}
+
+.layer-list>li:last-of-type::after {
+  display: none;
 }
 
 .layer-item:hover {
