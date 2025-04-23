@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fabric } from 'fabric';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { Close, Drag, TextAlignCenter, Image as ImageIcon } from 'grommet-icons';
-import '../styles/LayerPanel.css'; // We'll create this CSS file next
+import '../styles/LayerPanel.css';
 
 const reorder = (list: any[], startIndex: number, endIndex: number) => {
   const result = Array.from(list);
@@ -12,7 +12,7 @@ const reorder = (list: any[], startIndex: number, endIndex: number) => {
 };
 
 const LayerPanel: React.FC = () => {
-  const { canvas, toggleLayerPanel } = useProductEditor();
+  const { canvas, toggleLayerPanel, selectedObjectId, selectObject } = useProductEditor();
   const [layers, setLayers] = useState<fabric.Object[]>([]);
   const dragItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
@@ -30,10 +30,16 @@ const LayerPanel: React.FC = () => {
       canvas.on('object:added', updateLayers);
       canvas.on('object:removed', updateLayers);
       canvas.on('stack:changed', updateLayers);
+      canvas.on('selection:created', updateLayers);
+      canvas.on('selection:updated', updateLayers);
+      canvas.on('selection:cleared', updateLayers);
       return () => {
         canvas.off('object:added', updateLayers);
         canvas.off('object:removed', updateLayers);
         canvas.off('stack:changed', updateLayers);
+        canvas.off('selection:created', updateLayers);
+        canvas.off('selection:updated', updateLayers);
+        canvas.off('selection:cleared', updateLayers);
       };
     }
   }, [canvas]);
@@ -42,7 +48,7 @@ const LayerPanel: React.FC = () => {
     if (object.type === 'i-text') {
       return {
         name: (object as fabric.IText).text?.substring(0, 20) || 'Text',
-        icon: <TextAlignCenter size="small" />
+        icon: <TextAlignCenter size="medium" />
       };
     }
     if (object.type === 'image') {
@@ -50,7 +56,7 @@ const LayerPanel: React.FC = () => {
       const src = imageObject.getSrc();
       return {
         name: (object as any).name || (src ? src.split('/').pop()?.substring(0, 20) : undefined) || 'Image',
-        icon: <ImageIcon size="small" />
+        icon: <img src={src} alt="layer thumb" className="layer-thumbnail" />
       };
     }
     return { name: 'Unknown Layer', icon: <></> };
@@ -114,12 +120,16 @@ const LayerPanel: React.FC = () => {
     dragOverItemIndex.current = null;
   };
 
+  const handleLayerClick = (layer: fabric.Object) => {
+    selectObject(layer);
+  };
+
   return (
     <div className={`layer-panel ${dragging ? 'is-dragging-panel' : ''}`}>
       <div className="layer-panel-header">
-        <h3>Layers</h3>
+        <p>Layers</p>
         <button onClick={toggleLayerPanel} className="close-button" title="Close Panel">
-          <Close size="medium" />
+          <Close size="small" />
         </button>
       </div>
       <ul
@@ -129,29 +139,32 @@ const LayerPanel: React.FC = () => {
       >
         {layers.map((layer, index) => {
           const layerInfo = getLayerInfo(layer);
+          const layerId = (layer as any).id;
+          const isSelected = layerId && layerId === selectedObjectId;
           const isBeingDragged = dragging && dragItemIndex.current === index;
           return (
             <li
-              key={`layer-${index}-${(layer as any).id || index}`}
+              key={`layer-${layerId || index}`}
               draggable
               onDragStart={(e) => handleDragStart(e, index)}
               onDragEnter={(e) => handleDragEnter(e, index)}
               onDragLeave={handleDragLeave}
               onDragEnd={handleDragEnd}
-              className={`layer-item ${isBeingDragged ? 'is-dragging-item' : ''}`}
+              onClick={() => handleLayerClick(layer)}
+              className={`layer-item ${isSelected ? 'selected' : ''} ${isBeingDragged ? 'is-dragging-item' : ''}`}
             >
-              <span className="layer-drag-handle" title="Drag to reorder">
-                <Drag size="small" />
-              </span>
               <span className="layer-icon">{layerInfo.icon}</span>
               <span className="layer-name">{layerInfo.name}</span>
+              <span className="layer-drag-indicator">
+                <Drag size="small" />
+              </span>
             </li>
           );
         })}
-        {layers.length === 0 && <li className="no-layers">No user layers found.</li>}
+        {layers.length === 0 && <li className="no-layers">No layers found</li>}
       </ul>
     </div>
   );
 };
 
-export default LayerPanel; 
+export default LayerPanel;

@@ -1,7 +1,6 @@
 .layer-panel {
   position: absolute;
   top: 60px;
-  /* Adjust as needed based on toolbar/header height */
   right: 20px;
   width: 250px;
   background-color: #ffffff;
@@ -11,22 +10,23 @@
   z-index: 10;
   display: flex;
   flex-direction: column;
+  font-family: sans-serif;
 }
 
 .layer-panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 15px;
   border-bottom: 1px solid #e0e0e0;
   background-color: #f5f5f5;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
 }
 
-.layer-panel-header h3 {
+.layer-panel-header p {
   margin: 0;
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -34,64 +34,69 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.layer-panel-header .close-button:hover {
-  background-color: #eeeeee;
-  border-radius: 4px;
+  color: #555;
 }
 
 .layer-list {
   list-style: none;
-  padding: 0;
+  padding: 5px 0 30px 0;
   margin: 0;
   max-height: 400px;
-  /* Limit height and allow scrolling */
   overflow-y: auto;
   flex-grow: 1;
-  /* Allow list to take available space */
 }
 
 .layer-item {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 10px 15px;
+  border-bottom: none;
+  margin: 0 5px 2px 5px;
+  border-radius: 4px;
   font-size: 0.9rem;
-  background-color: #fff;
-  cursor: grab;
+  background-color: transparent;
+  cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.layer-item:last-child {
-  border-bottom: none;
+.layer-item:hover {
+  background-color: #f5f5f5;
+}
+
+.layer-item.selected {
+  background-color: #e0e8f3;
 }
 
 .layer-item.is-dragging-item {
-  opacity: 0.5;
-  background-color: #eaf2ff;
+  opacity: 0.6;
+  background-color: #d0d8e3;
   cursor: grabbing;
-}
-
-.layer-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding-right: 8px;
-  color: #a0a0a0;
-  cursor: grab;
 }
 
 .layer-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding-right: 8px;
-  color: #555;
+  padding-right: 10px;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.layer-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.layer-thumbnail {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid #ddd;
 }
 
 .layer-name {
@@ -99,11 +104,25 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #333;
 }
 
 .no-layers {
-  padding: 12px;
+  padding: 15px;
   text-align: center;
   color: #757575;
   font-style: italic;
+}
+
+.layer-drag-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding-left: 8px;
+  color: #a0a0a0;
+  cursor: grab;
+}
+
+.layer-item:active .layer-drag-indicator {
+  cursor: grabbing;
 }

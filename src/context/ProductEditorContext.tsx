@@ -12,6 +12,7 @@ import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { debounce } from 'lodash';
 import { FontOption, defaultFontOptions } from '../config/fontConfig';
 import { defaultPalette } from '../config/colorConfig';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ProductEditorContextType {
   canvas: fabric.Canvas | null;
@@ -44,6 +45,9 @@ interface ProductEditorContextType {
   colorPalette: (string | null)[][];
   showLayerPanel: boolean;
   toggleLayerPanel: () => void;
+  selectedObjectId: string | null;
+  setSelectedObjectId: (id: string | null) => void;
+  selectObject: (obj: fabric.Object | null) => void;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -124,6 +128,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
   const [updateCounter, setUpdateCounter] = useState(0);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
+  // Add state for selected object ID
+  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -336,6 +342,14 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       const handleSelection = (e: fabric.IEvent) => {
         const activeObject = fabricCanvasInstance?.getActiveObject();
         // Check if the active object is an IText instance
+
+        // Ensure the selected object has an ID
+        if (activeObject && !(activeObject as any).id) {
+          (activeObject as any).id = uuidv4();
+        }
+        setSelectedObjectId((activeObject as any)?.id || null); // Update context state
+
+        // Handle text toolbar visibility (existing logic)
         if (activeObject instanceof fabric.IText) {
           setSelectedTextObject(activeObject);
         } else {
@@ -343,13 +357,35 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         }
       };
 
-      const handleSelectionCleared = () => {
+      const handleSelectionCleared = (e: fabric.IEvent) => {
+        setSelectedObjectId(null); // Clear selection in context
         setSelectedTextObject(null);
       };
 
+      // Add unique ID to objects if they don't have one
+      const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
+        canvasInstance.getObjects().forEach(obj => {
+          if (!(obj as any).id) {
+            (obj as any).id = uuidv4();
+            console.log(`Assigned ID ${(obj as any).id} to object`, obj);
+          }
+        });
+      };
+      // Ensure initial objects have IDs
+      if (fabricCanvasInstance) {
+        ensureObjectIds(fabricCanvasInstance);
+      }
+
+      // Attach listeners
       fabricCanvasInstance?.on('selection:created', handleSelection);
       fabricCanvasInstance?.on('selection:updated', handleSelection);
       fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
+      // Also update IDs when new objects are added
+      fabricCanvasInstance?.on('object:added', (e) => {
+        if (e.target && !(e.target as any).id) {
+          (e.target as any).id = uuidv4();
+        }
+      });
 
       // Initial draw grid
       if (showGrid && fabricCanvasInstance) {
@@ -369,6 +405,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           fabricCanvasInstance.off('selection:created', handleSelection);
           fabricCanvasInstance.off('selection:updated', handleSelection);
           fabricCanvasInstance.off('selection:cleared', handleSelectionCleared);
+          fabricCanvasInstance.off('object:added');
         }
         // Dispose of the canvas instance created in this effect run
         cleanupKeyboardEvents();
@@ -535,6 +572,22 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     }
   }, [showGrid, width, height, canvas]);
 
+  const selectObject = (obj: fabric.Object | null) => {
+    if (canvas) {
+      if (obj) {
+        if (!(obj as any).id) {
+          (obj as any).id = uuidv4();
+        }
+        canvas.setActiveObject(obj);
+        setSelectedObjectId((obj as any).id);
+      } else {
+        canvas.discardActiveObject();
+        setSelectedObjectId(null);
+      }
+      canvas.requestRenderAll();
+    }
+  };
+
   return (
     <ProductEditorContext.Provider
       value={{
@@ -580,6 +633,9 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         colorPalette,
         showLayerPanel,
         toggleLayerPanel,
+        selectedObjectId,
+        setSelectedObjectId,
+        selectObject,
       }}
     >
       {children}
