@@ -1,19 +1,11 @@
 import React from 'react';
 import { useProductEditor } from '../context/ProductEditorContext';
 import FloatingToolbar from './FloatingToolbar';
-import BottomPreviewDisplay from './BottomPreviewDisplay';
+import ProductPreviews from './ProductPreviews';
 import Toolbar from './Toolbar';
 import LoadingOverlay from './LoadingOverlay';
 import TextToolbar from './TextToolbar';
 import '../styles/ProductEditor.css';
-import { fabric } from 'fabric';
-
-// Placeholder for the preview images
-const placeholderPreviews = [
-  { id: 1, viewUrl: 'https://picsum.photos/id/10/600/600' },
-  { id: 2, viewUrl: 'https://picsum.photos/id/20/600/600' },
-  { id: 3, viewUrl: 'https://picsum.photos/id/30/600/600' },
-];
 
 const ProductEditor: React.FC = () => {
   const {
@@ -67,7 +59,7 @@ const ProductEditor: React.FC = () => {
         </div>
 
         {showPreview && (
-          <BottomPreviewDisplay images={placeholderPreviews} />
+          <ProductPreviews />
         )}
       </div>
 

@@ -5,7 +5,8 @@ import {
   Variation,
   VariationField,
   VariationFieldsOption,
-  DraftTemplate
+  DraftTemplate,
+  DraftTemplateData,
 } from '../types';
 
 // Add a UUID generator for unique IDs
@@ -93,7 +94,7 @@ export function canvasTemplateVariationObjects(variations: Variation[], template
   return objs;
 }
 
-export function initDraftTemplates(variations: Variation[], product: Product) {
+export function initDraftTemplates(variations: Variation[], product: Product): DraftTemplateData[] {
   const { draftTemplates = [] } = product;
   
   // Check for any templates that are selected by the variation options
@@ -109,7 +110,10 @@ export function initDraftTemplates(variations: Variation[], product: Product) {
     const variationObjects = canvasTemplateVariationObjects(templateVariations, template);
     return {
       template,
-      variationFieldIds: templateVariations.map((v: Variation) => v.variationField?.id),
+      variationFieldIds: templateVariations
+        .map((v: Variation) => v.variationField?.id)
+        .filter(Boolean)
+        .map(id => Number(id)),
       variationObjects,
     };
   });

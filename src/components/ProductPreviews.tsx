@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import ImageZoomModal from './ImageZoomModal';
 import '../styles/ProductEditor.css';
 import '../styles/BottomPreviewDisplay.css';
+import { useProductEditor } from '../context/ProductEditorContext';
 
 interface PreviewImage {
   id: number | string;
   viewUrl: string;
 }
 
-interface BottomPreviewDisplayProps {
-  images: PreviewImage[];
-}
+interface BottomPreviewDisplayProps {}
 
-const BottomPreviewDisplay: React.FC<BottomPreviewDisplayProps> = ({
-  images,
-}) => {
+const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
+  const {
+    draftPreviews,
+  } = useProductEditor();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState<number>(0);
 
@@ -27,7 +27,7 @@ const BottomPreviewDisplay: React.FC<BottomPreviewDisplayProps> = ({
     setIsModalOpen(false);
   };
 
-  if (!images || images.length === 0) {
+  if (!draftPreviews || draftPreviews.length === 0) {
     return null;
   }
 
@@ -36,7 +36,7 @@ const BottomPreviewDisplay: React.FC<BottomPreviewDisplayProps> = ({
       {!isModalOpen && (
         <div className="bottom-preview-section">
           <div className="preview-images">
-            {images.map((preview, index) => (
+            {draftPreviews.map((preview: any, index) => (
               <div
                 key={preview.id}
                 className="preview-image-box"
@@ -58,14 +58,14 @@ const BottomPreviewDisplay: React.FC<BottomPreviewDisplayProps> = ({
       <ImageZoomModal
         isOpen={isModalOpen}
         onClose={closeModal}
-        imageUrl={images[selectedPreviewIndex]?.viewUrl || ''}
+        imageUrl={(draftPreviews[selectedPreviewIndex] as any)?.viewUrl || ''}
         productName="Preview"
-        totalImages={images.length}
+        totalImages={draftPreviews.length}
         currentIndex={selectedPreviewIndex}
-        allImages={images}
+        allImages={draftPreviews}
       />
     </>
   );
 };
 
-export default BottomPreviewDisplay; 
+export default ProductPreviews; 

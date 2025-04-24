@@ -1,20 +1,20 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fabric } from 'fabric';
-import { Product, Job, DraftTemplate, DraftPreview, SavedCanvasObject } from '../types';
+import { Product, Job, DraftTemplate, DraftTemplateData, DraftPreview, SavedCanvasObject } from '../types';
 import { drawGrid } from '../utils/grid';
 import { initDraftTemplates } from '../utils/job';
 import { renderEditorOrPreview } from '../utils/renderUtils';
 import { setupKeyboardEvents } from '../utils/ImageHandler';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
+import { setNewDraftPreviews } from '../utils/previewUtils';
 import { debounce } from 'lodash';
-
 
 interface ProductEditorContextType {
   canvas: fabric.Canvas | null;
   setCanvas: (canvas: fabric.Canvas) => void;
   canvasRef: React.RefObject<HTMLCanvasElement>;
   draftPreviews: DraftPreview[];
-  draftTemplates: { template: DraftTemplate; variationObjects: any[] }[];
+  draftTemplates: DraftTemplateData[]; // Updated to use the new type
   selectedTemplate: number | null;
   setSelectedTemplate: (templateId: number) => void;
   showGrid: boolean;
@@ -77,9 +77,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [
     draftTemplates,
     setDraftTemplates
-  ] = useState(([] as any[]));
-
-  const draftPreviews = product?.draftPreviews || [];
+  ] = useState<DraftTemplateData[]>([]);
+  const [draftPreviews, setDraftPreviews] = useState<DraftPreview[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(
@@ -234,8 +233,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       
       await renderEditorOrPreview(
         newCanvas,
-        templateData.template,
-        templateData.variationObjects,
+        (templateData as any).template,
+        (templateData as any).variationObjects,
         savedObjects,
         height,
         width,
@@ -311,6 +310,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       // Only update if they've actually changed
       if (haveDraftTemplatesChanged(draftTemplates, newDraftTemplates)) {
         setDraftTemplates(newDraftTemplates);
+        setDraftPreviews(setNewDraftPreviews(newDraftTemplates));
       }
 
       // Determine the template to load
