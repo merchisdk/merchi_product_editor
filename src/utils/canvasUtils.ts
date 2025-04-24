@@ -37,7 +37,7 @@ export const addTextToCanvas = (
         originX: 'center',
         originY: 'center',
         selectable: true,
-        editable: true
+        editable: false
       }
     );
 

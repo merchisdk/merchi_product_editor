@@ -1,14 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Select from 'react-select';
 import { ChromePicker, ColorResult } from 'react-color';
 import { useProductEditor } from '../context/ProductEditorContext';
-import { FontOption, fontOptions } from '../config/fontConfig';
-import { defaultPalette } from '../config/colorConfig';
+import { FontOption } from '../config/fontConfig';
 import { customStyles } from '../styles/textToolbarSelectStyles';
 import '../styles/TextToolbar.css';
+import { FormatButtons } from './FormatButtons';
+import { AlignMenu } from './AlignMenu';
 
 const TextToolbar: React.FC = () => {
-  const { selectedTextObject, updateSelectedText } = useProductEditor();
+  const {
+    selectedTextObject,
+    updateSelectedText,
+    fontOptions,
+    colorPalette,
+  } = useProductEditor();
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'palette' | 'custom'>('palette');
   const colorPickerRef = useRef<HTMLDivElement>(null);
@@ -17,18 +23,13 @@ const TextToolbar: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
         setDisplayColorPicker(false);
-        setPickerMode('palette');
       }
     };
-    if (displayColorPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [displayColorPicker]);
+  }, []);
 
   if (!selectedTextObject || !updateSelectedText) {
     return null;
@@ -63,6 +64,7 @@ const TextToolbar: React.FC = () => {
 
   const handleCustomTriggerClick = () => {
     setPickerMode('custom');
+    setDisplayColorPicker(true);
   };
 
   const currentFontOption = fontOptions.find(option => option.value === currentFontValue) || fontOptions[0];
@@ -93,7 +95,7 @@ const TextToolbar: React.FC = () => {
           <div className="color-picker-popover">
             {pickerMode === 'palette' ? (
               <div className="palette-grid">
-                {defaultPalette.flat().map((color, index) => {
+                {colorPalette.flat().map((color, index) => {
                   if (color === null) {
                     return (
                       <button
@@ -144,6 +146,9 @@ const TextToolbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      <FormatButtons />
+      <AlignMenu />
     </div>
   );
 };

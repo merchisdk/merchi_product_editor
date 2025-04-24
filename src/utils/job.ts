@@ -45,6 +45,13 @@ export function buildVariationFieldCanvasObject(variation: Variation) {
   const { value, variationField, variationFiles = [] } = variation;
   const { fieldType = FieldType.TEXT_INPUT, id } = variationField || {};
   if ([FieldType.TEXT_INPUT, FieldType.TEXT_AREA, FieldType.NUMBER_INPUT].includes(fieldType)) {
+    // if value is null or empty, do not create a text object
+    if (value === null || value === undefined || value === '') {
+      return {
+        fieldId: id,
+        value: null,
+      };
+    }
     // Used to add a text to the canvas
     return [{
       canvasObjectType: 'text',
@@ -86,22 +93,22 @@ export function buildVariationFieldCanvasObject(variation: Variation) {
 
 export function canvasTemplateVariationObjects(variations: Variation[], template: DraftTemplate) {
   // takes a list of variations and a template and returns a list of canvas objects to render
-  const objs: any[] = [];
-  variations.forEach((v: Variation) => {
-    objs.push(... buildVariationFieldCanvasObject(v));
-  });
-  return objs;
+  const templateVariations = filterVariationsByTemplate(variations, template);
+  
+  return templateVariations
+    .flatMap((v: Variation) => buildVariationFieldCanvasObject(v))
+    .filter((obj: any) => obj.canvasObjectType);
 }
 
 export function initDraftTemplates(variations: Variation[], product: Product) {
   const { draftTemplates = [] } = product;
-  
+
   // Check for any templates that are selected by the variation options
   const templates = findTemplatesSelectedByVarations(draftTemplates, variations) || [];
 
   // If there are no templates selected, return the draft templates
   const useTemplates = templates.length ? templates : draftTemplates;
-  
+
   return useTemplates.map((template: DraftTemplate) => {
     // find the variations which edit the template
     const templateVariations = filterVariationsByTemplate(variations, template);

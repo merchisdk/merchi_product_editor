@@ -1,5 +1,5 @@
 import React from 'react';
-import { Apps, Redo, Undo, View } from 'grommet-icons';
+import { Apps, Redo, Undo, View, Trash, Layer } from 'grommet-icons';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { addTextToCanvas } from '../utils/canvasUtils';
 import '../styles/Toolbar.css';
@@ -13,6 +13,10 @@ export default function Toolbar() {
     height,
     showPreview,
     togglePreview,
+    showLayerPanel,
+    toggleLayerPanel,
+    deleteObject,
+    selectedObjectId
   } = useProductEditor();
 
   // Add handleAddText function before the return statement
@@ -22,6 +26,15 @@ export default function Toolbar() {
   };
 
   const toggleGrid = () => setShowGrid(!showGrid);
+
+  // Handle delete button click
+  const handleDelete = () => {
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      deleteObject(activeObject);
+    }
+  };
 
   return (
     <>
@@ -45,6 +58,24 @@ export default function Toolbar() {
           <View width={24} height={24} />
           <span>{showPreview ? 'Hide Preview' : 'Show Preview'}</span>
         </div>
+      </div>
+
+      {/* Layer button */}
+      <div
+        className={`toolbar-button ${showLayerPanel ? 'active' : ''}`}
+        onClick={toggleLayerPanel}
+      >
+        <Layer width={24} height={24} />
+        <span>Layer</span>
+      </div>
+
+      {/* Delete button */}
+      <div
+        className={`toolbar-button ${!selectedObjectId ? 'disabled' : ''}`}
+        onClick={handleDelete}
+      >
+        <Trash width={24} height={24} />
+        <span>Delete</span>
       </div>
 
       {/* Redo and Undo buttons */}
