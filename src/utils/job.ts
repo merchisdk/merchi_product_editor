@@ -50,6 +50,7 @@ export function buildVariationFieldCanvasObject(variation: Variation) {
       return {
         fieldId: id,
         value: null,
+        uniqueId: generateUniqueId()
       };
     }
     // Used to add a text to the canvas
@@ -94,7 +95,7 @@ export function buildVariationFieldCanvasObject(variation: Variation) {
 export function canvasTemplateVariationObjects(variations: Variation[], template: DraftTemplate) {
   // takes a list of variations and a template and returns a list of canvas objects to render
   const templateVariations = filterVariationsByTemplate(variations, template);
-  
+
   return templateVariations
     .flatMap((v: Variation) => buildVariationFieldCanvasObject(v))
     .filter((obj: any) => obj.canvasObjectType);
