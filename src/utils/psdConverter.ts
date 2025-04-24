@@ -478,6 +478,9 @@ export const loadPsdOntoCanvas = async (
                       // Store fieldId as a custom property
                       (img as any).fieldId = fieldId;
 
+                      // Add fileId to enable precise identification of which file this image represents
+                      (img as any).fileId = file.id;
+
                       // Apply clip path
                       const imageClipPath = new fabric.Rect({
                         left: scaledDesignBounds.left,

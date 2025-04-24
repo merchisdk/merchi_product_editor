@@ -153,6 +153,8 @@ export const addFilesToCanvas = async (
           evented: true
         });
 
+        (img as any).fileId = file.id;
+
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();

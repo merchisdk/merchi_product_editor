@@ -607,17 +607,18 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     try {
       setIsCanvasLoading(true);
 
-      // remove from canvas
+      // remove the object from the canvas
       canvas.remove(obj);
       canvas.renderAll();
 
       const fieldId = (obj as any)?.fieldId;
+      const fileId = (obj as any)?.fileId;
 
       if (fieldId) {
         const currentTemplateId = selectedTemplate;
-        // Remove from draftTemplates variationObjects
+
+        // update draftTemplates
         const updatedDraftTemplates = draftTemplates.map(dt => {
-          // Only modify the currently selected template
           if (dt.template.id === currentTemplateId) {
             return {
               ...dt,
@@ -626,69 +627,52 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           }
           return dt;
         });
-
-        // Update the draft templates state
         setDraftTemplates(updatedDraftTemplates);
 
-        // Clear the field value in form state using react-hook-form
+        // update the form state
         if (hookForm) {
-          const formValues = hookForm.getValues();
-          const hasVariationsGroups = formValues && 'variationsGroups' in formValues;
-
+          const hasVariationsGroups = 'variationsGroups' in hookForm.getValues();
           const variationsField = hasVariationsGroups ?
-            `variationsGroups.${groupIndex}.variations` :
-            'variations';
-
+            `variationsGroups.${groupIndex}.variations` : 'variations';
           const values = hookForm.getValues(variationsField) || [];
 
-          // Find the variation by field ID and clear its value
           const updatedValues = values.map((variation: any) => {
             if (variation?.variationField?.id === fieldId) {
-              // Clear the value based on field type
-              if (variation.variationFiles && variation.variationFiles.length > 0) {
-                // For file uploads, clear the files array
+              // file type variation and has fileId
+              // only delete the specific file
+              if (variation.variationFiles?.length > 0 && fileId) {
+                const updatedFiles = variation.variationFiles.filter((file: any) => file.id !== fileId);
+                return {
+                  ...variation,
+                  value: updatedFiles.length === 0 ? null : variation.value,
+                  variationFiles: updatedFiles
+                };
+              }
+              // non file type or no fileId
+              // clear the whole field
+              else if (!fileId) {
                 return {
                   ...variation,
                   value: null,
-                  variationFiles: []
-                };
-              } else {
-                // For text or other inputs, clear the value
-                return {
-                  ...variation,
-                  value: null
+                  variationFiles: variation.variationFiles ? [] : undefined
                 };
               }
             }
             return variation;
           });
 
-          // Update the form with the new values
           hookForm.setValue(variationsField, updatedValues);
-
-          if (currentTemplateId === selectedTemplate) {
-            const currentTemplate = updatedDraftTemplates.find(dt => dt.template.id === currentTemplateId);
-            if (currentTemplate) {
-              setIsCanvasLoading(false);
-            }
-          }
         }
       }
 
-      // Update the selected object ID state
+      // clear the selection state
       setSelectedObjectId(null);
       setSelectedTextObject(null);
+      setIsCanvasLoading(false);
 
-      // Check if this was the last object on the canvas and reset loading state if needed
-      if (canvas.getObjects().length === 0) {
-        setIsCanvasLoading(false);
-      }
-
-      // Trigger save if needed
       onSave && onSave();
     } catch (error) {
       console.error('Error in deleteObject:', error);
-      // Ensure loading state is reset even if an error occurs
       setIsCanvasLoading(false);
     }
   }, [canvas, draftTemplates, selectedTemplate, hookForm, groupIndex, onSave]);
