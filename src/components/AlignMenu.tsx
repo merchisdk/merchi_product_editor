@@ -20,6 +20,7 @@ export const AlignMenu: React.FC = () => {
 
   if (!selectedTextObject || !updateSelectedText) return null;
 
+
   const handleAlign = (align: 'left' | 'center' | 'right') => {
     updateSelectedText({ textAlign: align });
     setShowMenu(false);
