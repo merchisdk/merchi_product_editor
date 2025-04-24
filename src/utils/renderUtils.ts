@@ -1,4 +1,4 @@
-  import { DraftTemplate } from "../types";
+  import { DraftTemplate, SavedCanvasObject } from "../types";
   import { loadRegularImagePromise } from "./imageUtils";
   import { loadPsdOntoCanvas } from "./psdConverter";
   
@@ -7,6 +7,7 @@
     fabricCanvas: fabric.Canvas,
     template: DraftTemplate,
     variations: any[],
+    savedObjects: SavedCanvasObject[],
     width: number,
     height: number
   ): Promise<void> => {
@@ -28,7 +29,7 @@
       // First, check if the canvas is still valid
       try {
         // Process the PSD file
-        await loadPsdOntoCanvas(fabricCanvas, imageUrl, variations, width, height);
+        await loadPsdOntoCanvas(fabricCanvas, imageUrl, variations, savedObjects, width, height);
         return Promise.resolve();
       } catch (error) {
         // If PSD processing fails, fall back to our regular image loading

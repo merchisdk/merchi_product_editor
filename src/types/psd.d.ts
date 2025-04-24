@@ -50,4 +50,4 @@ declare module 'psd.js' {
   };
   
   export default PSD;
-} 
+}

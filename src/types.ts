@@ -204,3 +204,23 @@ export interface ProductEditorProps {
   onCancel?: () => void;
   psdTemplateUrl?: string;
 }
+
+export interface SavedCanvasObject {
+  fieldId: string;
+  fileId?: string;
+  uniqueId?: string; // Add uniqueId property to the interface
+  type: string;
+  left: number;
+  top: number;
+  scaleX: number;
+  scaleY: number;
+  angle: number;
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fill?: string;
+  width?: number;
+  height?: number;
+  src?: string;
+  [key: string]: any; // Allow for other properties
+}

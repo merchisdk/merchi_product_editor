@@ -1,8 +1,7 @@
 import { fabric } from 'fabric';
-import { readPsd, Layer } from 'ag-psd';
-import { Variation, FieldType } from '../types';
-import { loadRegularImagePromise } from './imageUtils';
-import { drawGrid } from './grid';
+import { readPsd } from 'ag-psd';
+import { generateUniqueId } from './job';
+import { SavedCanvasObject } from '../types';
 
 // Extended Canvas interface with our custom properties
 interface ExtendedCanvas extends fabric.Canvas {
@@ -284,6 +283,7 @@ export const loadPsdOntoCanvas = async (
   canvas: ExtendedCanvas,
   psdUrl: string,
   variations: any[],
+  savedObjects: SavedCanvasObject[],
   width: number,
   height: number
 ): Promise<void> => {
@@ -412,56 +412,110 @@ export const loadPsdOntoCanvas = async (
               const objectTop = scaledDesignBounds.top + scaledDesignBounds.height / 2;
 
               // Extract the field type and value from the variation
-              const { canvasObjectType, files = [], fieldId, fontFamily, fontSize } = variation;
+              const { canvasObjectType, file, fieldId, fontFamily, fontSize } = variation;
               const value = variation.value;
-
-              // Create canvas object based on field type
+              
+              // Check if this variation exists in savedObjects
+              const savedObject = savedObjects.find(obj => obj.fieldId === fieldId);
+              
+              // Create canvas 
               let canvasObject;
 
               // Handle text variations
               if (canvasObjectType === 'text') {
-                // Ensure the string passed to IText constructor is valid
-                const textValue = typeof value === 'string' ? value :
-                  value != null ? String(value) : 'Text';
-
-                canvasObject = new fabric.IText(textValue, {
-                  left: objectLeft,
-                  top: objectTop,
-                  fontFamily,
-                  fontSize,
-                  fill: '#000000',
-                  originX: 'center',
-                  originY: 'center',
-                  selectable: true,
-                  editable: false,
-                  text: textValue,
-                });
-
+                // Create the text object with either saved or defaults
+                if (savedObject) {
+                  // Create text with default first
+                  canvasObject = new fabric.IText(value?.toString() || 'Text', {
+                    ...savedObject,
+                    left: savedObject.left || objectLeft,
+                    top: savedObject.top || objectTop,
+                    fontFamily: savedObject.fontFamily || fontFamily,
+                    fontSize: savedObject.fontSize || fontSize,
+                    fill: savedObject.fill || '#000000',
+                    originX: savedObject.originX || 'center',
+                    originY: savedObject.originY ||'center',
+                    selectable: true,
+                    editable: true,
+                    text: value?.toString(), // Always use the current variation value for text
+                    scaleX: savedObject.scaleX || 1,
+                    scaleY: savedObject.scaleY || 1,
+                    angle: savedObject.angle || 0,
+                  });
+                } else {
+                  // Create with default properties
+                  canvasObject = new fabric.IText(value?.toString() || 'Text', {
+                    left: objectLeft,
+                    top: objectTop,
+                    fontFamily,
+                    fontSize,
+                    fill: '#000000',
+                    originX: 'center',
+                    originY: 'center',
+                    selectable: true,
+                    editable: false,
+                    text: value?.toString(),
+                  });
+                }
+                
                 // Store fieldId as a custom property
                 (canvasObject as any).fieldId = fieldId;
-                canvasRef.add(canvasObject);
+                // Store uniqueId if it exists in the saved object
+                (canvasObject as any).uniqueId = savedObject?.uniqueId || generateUniqueId();
+
                 // Apply the clip path to the text
                 // Omit clip path for now to restore movability
                 canvasObject.clipPath = clipPath;
+
+                canvasRef.add(canvasObject);
               }
               // Handle image variations
               else if (canvasObjectType === "image") {
-                files.forEach((file: any) => {
-                  if (file.viewUrl) {
-                    fabric.Image.fromURL(file.viewUrl, (img) => {
-                      if (!img) return;
+                // Get the file ID for comparison with saved objects
+                const fileId = file?.id;
+                // Find by both fieldId and fileId for images
+                const savedImageObject = fileId ? 
+                  savedObjects.find(obj => obj.fieldId === fieldId && obj.fileId === fileId) : 
+                  savedObject;
+                
+                if (file && file.viewUrl) {
+                  fabric.Image.fromURL(file.viewUrl, (img) => {
+                    if (!img) return;
 
-                      // Scale image to fit within design bounds
-                      const maxWidth = scaledDesignBounds.width * 0.8;
-                      const maxHeight = scaledDesignBounds.height * 0.8;
-                      const scale = Math.min(
-                        maxWidth / img.width!,
-                        maxHeight / img.height!,
-                        1
-                      );
-                      img.scale(scale);
+                    // Default scaling to fit design bounds
+                    const maxWidth = scaledDesignBounds.width * 0.8;
+                    const maxHeight = scaledDesignBounds.height * 0.8;
+                    const defaultScale = Math.min(
+                      maxWidth / img.width!,
+                      maxHeight / img.height!,
+                      1
+                    );
+                    
+                    if (savedImageObject) {
+                      // Apply saved properties
+                      img.set({
+                        ...savedImageObject,
+                        left: savedImageObject.left || objectLeft,
+                        top: savedImageObject.top || objectTop,
+                        scaleX: savedImageObject.scaleX || defaultScale,
+                        scaleY: savedImageObject.scaleY || defaultScale,
+                        angle: savedImageObject.angle || 0,
+                        originX: savedImageObject.originX || 'center',
+                        originY: savedImageObject.originY || 'center',
+                        cornerSize: 8,
+                        borderColor: '#303DBF',
+                        cornerColor: '#303DBF',
+                        cornerStrokeColor: '#303DBF',
+                        transparentCorners: false,
+                        selectable: true,
+                      });
+                      
+                      // Store uniqueId if it exists
+                      (img as any).uniqueId = savedImageObject?.uniqueId || generateUniqueId();
 
-                      // Position image
+                    } else {
+                      // Apply default properties
+                      img.scale(defaultScale);
                       img.set({
                         left: objectLeft,
                         top: objectTop,
@@ -474,70 +528,34 @@ export const loadPsdOntoCanvas = async (
                         transparentCorners: false,
                         selectable: true,
                       });
+                    }
+                    
+                    // Store fieldId and fileId as custom properties
+                    (img as any).fieldId = fieldId;
+                    if (fileId) {
+                      (img as any).fileId = fileId;
+                    }
+                    (img as any).uniqueId = generateUniqueId();
 
-                      // Store fieldId as a custom property
-                      (img as any).fieldId = fieldId;
-
-                      // Add fileId to enable precise identification of which file this image represents
-                      (img as any).fileId = file.id;
-
-                      // Apply clip path
-                      const imageClipPath = new fabric.Rect({
-                        left: scaledDesignBounds.left,
-                        top: scaledDesignBounds.top,
-                        width: scaledDesignBounds.width,
-                        height: scaledDesignBounds.height,
-                        absolutePositioned: true
-                      });
-                      img.clipPath = imageClipPath;
-
-                      // Check canvas validity before adding
-                      if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
-                        return;
-                      }
-                      canvasRef.add(img);
-                      canvasRef.renderAll();
+                    // Apply clip path
+                    const imageClipPath = new fabric.Rect({
+                      left: scaledDesignBounds.left,
+                      top: scaledDesignBounds.top,
+                      width: scaledDesignBounds.width,
+                      height: scaledDesignBounds.height,
+                      absolutePositioned: true
                     });
-                  }
-                });
+                    img.clipPath = imageClipPath;
+
+                    // Check canvas validity before adding
+                    if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
+                      return;
+                    }
+                    canvasRef.add(img);
+                    canvasRef.renderAll();
+                  });
+                }
               }
-              // Handle color variations
-              // else if (fieldType === FieldType.COLOUR_PICKER || fieldType === FieldType.COLOUR_SELECT) {
-              //   if (value) {
-              //     canvasObject = new fabric.Rect({
-              //       left: objectLeft,
-              //       top: objectTop,
-              //       width: scaledDesignBounds.width * 0.5,
-              //       height: scaledDesignBounds.height * 0.5,
-              //       fill: value.toString(),
-              //       originX: 'center',
-              //       originY: 'center',
-              //       selectable: true,
-              //     });
-
-              //     // Store fieldId as a custom property
-              //     (canvasObject as any).fieldId = fieldId;
-              //   }
-              // }
-
-              // // Add the object to canvas if it was created
-              // if (canvasObject) {
-              //   // Apply clip path
-              //   const objClipPath = new fabric.Rect({
-              //     left: scaledDesignBounds.left,
-              //     top: scaledDesignBounds.top,
-              //     width: scaledDesignBounds.width,
-              //     height: scaledDesignBounds.height,
-              //     absolutePositioned: true
-              //   });
-              //   canvasObject.clipPath = objClipPath;
-
-              //   // Check canvas validity before adding
-              //   if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
-              //     return;
-              //   }
-              //   canvasRef.add(canvasObject);
-              // }
             });
           }
 
@@ -547,7 +565,6 @@ export const loadPsdOntoCanvas = async (
             resolve();
             return;
           }
-
         }
 
         // Final check before renderAll
@@ -562,7 +579,6 @@ export const loadPsdOntoCanvas = async (
           if (canvasRef && canvasRef.renderAll) {
             canvasRef.renderAll();
           }
-          console.log('PSD rendered successfully on canvas');
         } catch (e) {
           console.error('Error rendering canvas:', e);
         }

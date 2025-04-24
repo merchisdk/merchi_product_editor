@@ -1,6 +1,6 @@
 {
   "name": "merchi_product_editor",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "A React component for editing product images using Fabric.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,6 +35,8 @@
     "grommet-icons": "^4.12.4",
     "lodash": "^4.17.21",
     "psd.js": "^3.9.1",
+    "react-hook-form": "^7.55.0",
+    "react-icons": "^5.5.0",
     "react-color": "^2.19.3",
     "react-hook-form": "^7.55.0",
     "react-icons": "^5.5.0",
