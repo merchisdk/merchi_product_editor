@@ -197,11 +197,7 @@ export const loadRegularImagePromise = (
           top: (height - img.height! * scale) / 2,
           selectable: false, // template image is not selectable
           evented: false,    // template image is not responsive to events
-        });
-        
-        console.log('Image positioned at:', {
-          left: img.left,
-          top: img.top
+          crossOrigin: 'anonymous',
         });
 
         // Check if canvas is still valid when tracking is enabled

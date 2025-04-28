@@ -1,41 +1,51 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { fabric } from 'fabric';
-import { Product, Job, DraftTemplate, DraftTemplateData, DraftPreview, SavedCanvasObject } from '../types';
+import { Product, Job, DraftTemplate, DraftTemplateData, DraftPreview, SavedCanvasObject, RenderedDraftPreview } from '../types';
 import { drawGrid } from '../utils/grid';
 import { initDraftTemplates } from '../utils/job';
 import { renderEditorOrPreview } from '../utils/renderUtils';
-import { setupKeyboardEvents } from '../utils/ImageHandler';
+import { setupKeyboardEvents } from '../utils/keyboard';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { setNewDraftPreviews } from '../utils/previewUtils';
 import { debounce } from 'lodash';
+import { renderClippedImage } from '../utils/canvasUtils';
 
 interface ProductEditorContextType {
+  // States
   canvas: fabric.Canvas | null;
-  setCanvas: (canvas: fabric.Canvas) => void;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
   draftPreviews: DraftPreview[];
   draftTemplates: DraftTemplateData[]; // Updated to use the new type
-  selectedTemplate: number | null;
-  setSelectedTemplate: (templateId: number) => void;
-  showGrid: boolean;
-  setShowGrid: (show: boolean) => void;
-  showPreview: boolean;
-  togglePreview: () => void;
-  product: Product;
-  isMobileView: boolean;
-  job: Job;
-  width: number;
-  height: number;
-  handleUndo: () => void;
-  handleRedo: () => void;
-  handleTemplateChange: (draftTemplate: DraftTemplate) => void;
-  handleSave: () => void;
-  handleCancel: () => void;
-  savedObjects: SavedCanvasObject[];
   isCanvasLoading: boolean;
+  isMobileView: boolean;
+  loadingPreviews: boolean;
+  renderedDraftPreviews: RenderedDraftPreview[];
+  savedObjects: SavedCanvasObject[];
+  selectedTemplate: number | null;
   selectedTextObject: fabric.IText | null;
+  showGrid: boolean;
+  showPreview: boolean;
+
+  // State Setters
+  setCanvas: (canvas: fabric.Canvas) => void;
+  setSelectedTemplate: (templateId: number) => void;
+  setShowGrid: (show: boolean) => void;
+
+  // Functions
+  handleCancel: () => void;
+  handleRedo: () => void;
+  handleSave: () => void;
+  handleTemplateChange: (draftTemplate: DraftTemplate) => void;
+  handleUndo: () => void;
+  recordVariationFieldObjectsOnCanvas: () => void;
+  togglePreview: () => void;
   updateSelectedText: (props: Partial<fabric.IText>) => void;
-  recordVariationFieldObjects: () => void;
+
+  // Props
+  canvasRef: React.RefObject<HTMLCanvasElement>;
+  height: number;
+  job: Job;
+  product: Product;
+  width: number;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -63,7 +73,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   onCancel,
   hookForm = null, // Initialize with null
 }) => {
-  const { watch } = hookForm;
   
   // Create refs to store the latest values to prevent excessive re-renders
   const allVariationsRef = useRef<any[]>([]);
@@ -106,7 +115,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   }, [product]);
 
   // Function to record the current state of variation field objects
-  const recordVariationFieldObjects = useCallback(() => {
+  const recordVariationFieldObjectsOnCanvas = useCallback(() => {
     if (!canvas || selectedTemplate === null) return;
     // Create a fresh array instead of appending to existing
     const updatedSavedObjects: SavedCanvasObject[] = [];
@@ -161,9 +170,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       // Record the state changes after updating text properties
       // This ensures color changes and other styling updates are saved
       setTimeout(() => {
-        console.log('Recording after text update with canvas:', !!canvas, 'and template:', selectedTemplate);
         if (canvas && selectedTemplate !== null) {
-          recordVariationFieldObjects();
+          recordVariationFieldObjectsOnCanvas();
         }
       }, 50);
     } else {
@@ -185,7 +193,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     if (!canvas) return;
 
     // Record the current state of variation field objects
-    recordVariationFieldObjects();
+    recordVariationFieldObjectsOnCanvas();
 
     // Check if this is already the selected template - prevent reloading the same template
     if (draftTemplate.id && selectedTemplate === draftTemplate.id) {
@@ -260,7 +268,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       }, 50);
 
       // Re-setup keyboard events for the new canvas
-      setupKeyboardEvents(newCanvas, (dataUrl) => {
+      setupKeyboardEvents(newCanvas, (dataUrl: any) => {
         if (document.activeElement === newCanvas.upperCanvasEl) {
           onSave && onSave();
         }
@@ -283,7 +291,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
       // Record the current state of variation field objects before changes
       if (canvas) {
-        recordVariationFieldObjects();
+        recordVariationFieldObjectsOnCanvas();
       }
 
       // Extract the variations from the watch values
@@ -314,18 +322,14 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       }
 
       // Determine the template to load
-      // prioritize existing selection if still valid, otherwise default to first.
       let templateToLoad: DraftTemplate | undefined = newDraftTemplates[0]?.template;
+
       if (currentSelectedIdStillExists && selectedTemplate) {
         const previouslySelected = newDraftTemplates.find(dt => dt.template.id === selectedTemplate);
-        if (previouslySelected) {
-          templateToLoad = previouslySelected.template;
-        } else {
-          setSelectedTemplate(templateToLoad?.id || null);
-        }
-      } else if (newDraftTemplates.length > 0) {
-        setSelectedTemplate(templateToLoad?.id || null);
+        templateToLoad = previouslySelected?.template || templateToLoad;
       }
+
+      setSelectedTemplate(templateToLoad?.id || null);
 
       // Handle canvas setup
       if (fabricCanvasInstance) {
@@ -367,9 +371,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           drawGrid(fabricCanvasInstance, width, height, 20, '#a0a0a0', showGrid);
         }
         
-        // Setup event handlers
-        setupEventHandlers(fabricCanvasInstance);
-        
         setIsCanvasLoading(false);
       } else {
         setIsCanvasLoading(false);
@@ -385,12 +386,19 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     savedObjects,
     canvas,
     selectedTemplate,
-    recordVariationFieldObjects
+    recordVariationFieldObjectsOnCanvas,
+    setSelectedTemplate
   ]);
-  
+
+  const [loadingPreviews, setLoadingPreviews] = useState(false);
+  const [renderedDraftPreviews, setRenderedDraftPreviews] = useState<RenderedDraftPreview[]>([]);
+
   // Extract event handler setup to a separate function to avoid recreating in debounced watch
-  const setupEventHandlers = useCallback((fabricCanvasInstance: fabric.Canvas) => {
+  const setupEventHandlers = (fabricCanvasInstance: fabric.Canvas, selectedTemplate: number | null) => {
     if (!fabricCanvasInstance) return () => {};
+
+    // Add a flag to prevent recursive calls
+    let isRendering = false;
 
     // Define the record changes function with canvas and template closure
     const recordChanges = () => {
@@ -447,6 +455,43 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       setSelectedTextObject(null);
     };
 
+    const updateRenderedDraftPreviews = async () => {
+      const templateId = selectedTemplate;
+      const renderedImage = await renderClippedImage(fabricCanvasInstance, {format: 'png'});
+
+      if (renderedImage && templateId) {
+        const previews = [...renderedDraftPreviews];
+        const existingPreviewIndex = previews.findIndex(preview => preview.templateId === templateId);
+
+        if (existingPreviewIndex !== -1) {
+          // Update existing preview
+          previews[existingPreviewIndex] = { templateId, image: renderedImage };
+        } else {
+          // Add new preview
+          previews.push({ templateId, image: renderedImage });
+        }
+
+        setRenderedDraftPreviews(previews);
+        setLoadingPreviews(false);
+      }
+    };
+
+    // Add after:render event listener to call renderClippedImage
+    const handleAfterRender = async () => {
+      // Prevent recursive calls
+      if (isRendering) return;
+      
+      try {
+        isRendering = true;
+        setLoadingPreviews(true);
+        await updateRenderedDraftPreviews();
+      } catch (error) {
+        console.error('Error rendering clipped image after render:', error);
+      } finally {
+        isRendering = false;
+      }
+    };
+
     // setup keyboard events
     const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvasInstance, () => {
       if (document.activeElement === fabricCanvasInstance.upperCanvasEl) {
@@ -457,6 +502,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     fabricCanvasInstance.on('selection:created', handleSelection);
     fabricCanvasInstance.on('selection:updated', handleSelection);
     fabricCanvasInstance.on('selection:cleared', handleSelectionCleared);
+    fabricCanvasInstance.on('after:render', handleAfterRender);
     
     // Add event listeners for object modifications
     fabricCanvasInstance.on('object:modified', boundRecordChanges);
@@ -475,6 +521,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       fabricCanvasInstance.off('selection:created', handleSelection);
       fabricCanvasInstance.off('selection:updated', handleSelection);
       fabricCanvasInstance.off('selection:cleared', handleSelectionCleared);
+      fabricCanvasInstance.off('after:render', handleAfterRender);
       
       fabricCanvasInstance.off('object:modified', boundRecordChanges);
       fabricCanvasInstance.off('object:moved', boundRecordChanges);
@@ -486,7 +533,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       
       cleanupKeyboardEvents();
     };
-  }, [createEventHandler, onSave, setSavedObjects]);
+  };
 
   // Set up the debounced watch subscription
   useEffect(() => {
@@ -496,7 +543,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     const subscription = hookForm.watch((value: any) => {
       debouncedWatch({
         variationsGroups: value.variationsGroups,
-        variations: value.variations
+        variations: value.variations,
       });
     });
     
@@ -534,32 +581,40 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     }
   }, [showGrid, width, height, canvas]);
 
+  // Move setupEventHandlers call to a useEffect hook
+  useEffect(() => {
+    if (canvas) {
+      const cleanupEventHandlers = setupEventHandlers(canvas, selectedTemplate);
+      return () => {
+        cleanupEventHandlers();
+      };
+    }
+  }, [canvas, selectedTemplate]);
+
   return (
     <ProductEditorContext.Provider
       value={{
+        // States
         canvas,
-        setCanvas,
-        canvasRef,
         draftPreviews,
         draftTemplates,
-        selectedTemplate,
-        setSelectedTemplate,
-        showGrid,
-        setShowGrid,
-        showPreview,
-        togglePreview,
-        product,
+        isCanvasLoading,
         isMobileView,
-        job,
-        width,
-        height,
-        handleUndo: () => {
-          // if (canvas) {
-          //   canvas.undo();
-          // }
-          // History functionality disabled
-          console.log('Undo functionality is disabled');
-        },
+        loadingPreviews,
+        renderedDraftPreviews,
+        savedObjects,
+        selectedTemplate,
+        selectedTextObject,
+        showGrid,
+        showPreview,
+
+        // State Setters
+        setCanvas,
+        setSelectedTemplate,
+        setShowGrid,
+
+        // Functions
+        handleCancel: () => onCancel(),
         handleRedo: () => {
           // if (canvas) {
           //   canvas.redo();
@@ -567,14 +622,25 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           // History functionality disabled
           console.log('Redo functionality is disabled');
         },
-        handleTemplateChange,
         handleSave,
-        handleCancel: () => onCancel(),
-        savedObjects,
-        isCanvasLoading,
-        selectedTextObject,
+        handleTemplateChange,
+        handleUndo: () => {
+          // if (canvas) {
+          //   canvas.undo();
+          // }
+          // History functionality disabled
+          console.log('Undo functionality is disabled');
+        },
+        recordVariationFieldObjectsOnCanvas,
+        togglePreview,
         updateSelectedText,
-        recordVariationFieldObjects,
+
+        // Props
+        canvasRef,
+        height,
+        job,
+        product,
+        width,
       }}
     >
       {children}

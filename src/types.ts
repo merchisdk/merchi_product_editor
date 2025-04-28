@@ -231,3 +231,16 @@ export interface DraftTemplateData {
   variationFieldIds: number[]; // List of IDs for all variation fields in this template
   variationObjects: any[];     // Objects associated with the variation fields
 }
+
+export interface RenderedDraftPreview {
+  templateId: number;
+  image: string;
+}
+
+export interface MappedPreview {
+  draftPreview: DraftPreview;
+  draftPreviewLayers: {
+    layerName: string | undefined;
+    renderedLayer: RenderedDraftPreview | null;
+  }[];
+}

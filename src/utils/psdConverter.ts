@@ -368,7 +368,7 @@ export const loadPsdOntoCanvas = async (
           canvasRef.designBounds = scaledDesignBounds;
           
           // Add a visual indicator of the design area
-          const boundaryRect = new fabric.Rect({
+          const boundaryRect = new fabric.Rect(({
             left: scaledDesignBounds.left,
             top: scaledDesignBounds.top,
             width: scaledDesignBounds.width,
@@ -378,8 +378,9 @@ export const loadPsdOntoCanvas = async (
             strokeWidth: 1,
             strokeDashArray: [5, 5],
             selectable: false,
-            evented: false
-          });
+            evented: false,
+            id: 'design-boundary-rect'
+          } as any));
           
           // Check canvas validity before adding rect
           if (!canvasRef || canvasRef.psdUrl !== psdUrl) {
@@ -477,7 +478,7 @@ export const loadPsdOntoCanvas = async (
                 const savedImageObject = fileId ? 
                   savedObjects.find(obj => obj.fieldId === fieldId && obj.fileId === fileId) : 
                   savedObject;
-                
+
                 if (file && file.viewUrl) {
                   fabric.Image.fromURL(file.viewUrl, (img) => {
                     if (!img) return;
@@ -508,6 +509,7 @@ export const loadPsdOntoCanvas = async (
                         cornerStrokeColor: '#303DBF',
                         transparentCorners: false,
                         selectable: true,
+                        crossOrigin: 'anonymous',
                       });
                       
                       // Store uniqueId if it exists
@@ -527,6 +529,7 @@ export const loadPsdOntoCanvas = async (
                         cornerStrokeColor: '#303DBF',
                         transparentCorners: false,
                         selectable: true,
+                        crossOrigin: 'anonymous',
                       });
                     }
                     
@@ -553,7 +556,7 @@ export const loadPsdOntoCanvas = async (
                     }
                     canvasRef.add(img);
                     canvasRef.renderAll();
-                  });
+                  }, { crossOrigin: 'anonymous' });
                 }
               }
             });
@@ -584,7 +587,7 @@ export const loadPsdOntoCanvas = async (
         }
         
         resolve();
-      });
+      }, { crossOrigin: 'anonymous' });
     });
   } catch (error) {
     console.error('Error loading PSD onto canvas:', error);
