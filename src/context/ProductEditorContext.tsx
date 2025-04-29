@@ -93,7 +93,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(
     draftTemplates?.[0]?.template?.id || null
   );
-  const [showGrid, setShowGrid] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
   const [showPreview, setShowPreview] = useState(true);
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
@@ -307,6 +307,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       allVariationsRef.current = newAllVariations;
 
       const newDraftTemplates = initDraftTemplates(newAllVariations, productRef.current);
+      console.log('newDraftTemplates', newDraftTemplates);
 
       // Check if the currently selected template ID still exists in the new list
       const currentSelectedIdStillExists = newDraftTemplates.some(
@@ -389,6 +390,34 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     recordVariationFieldObjectsOnCanvas,
     setSelectedTemplate
   ]);
+
+  // Set up the debounced watch subscription
+  useEffect(() => {
+    if (!hookForm) return;
+    
+    // Subscribe to form changes
+    const subscription = hookForm.watch((value: any) => {
+      debouncedWatch({
+        variationsGroups: value.variationsGroups,
+        variations: value.variations,
+      });
+    });
+    
+    // Clean up subscription
+    return () => subscription.unsubscribe();
+  }, [hookForm, debouncedWatch]);
+
+  // This effect is used to trigger the debounced watch when the selected template is not set
+  // This helps with things like add group.
+  useEffect(() => {
+    if (!selectedTemplate) {
+      debouncedWatch({
+        variationsGroups: job.variationsGroups,
+        variations: job.variations,
+      });
+    }
+  }, [groupIndex]);
+
 
   const [loadingPreviews, setLoadingPreviews] = useState(false);
   const [renderedDraftPreviews, setRenderedDraftPreviews] = useState<RenderedDraftPreview[]>([]);
@@ -534,22 +563,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       cleanupKeyboardEvents();
     };
   };
-
-  // Set up the debounced watch subscription
-  useEffect(() => {
-    if (!hookForm) return;
-    
-    // Subscribe to form changes
-    const subscription = hookForm.watch((value: any) => {
-      debouncedWatch({
-        variationsGroups: value.variationsGroups,
-        variations: value.variations,
-      });
-    });
-    
-    // Clean up subscription
-    return () => subscription.unsubscribe();
-  }, [hookForm, debouncedWatch]);
 
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
   // Check if we're on a small screen
