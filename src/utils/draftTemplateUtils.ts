@@ -21,7 +21,7 @@ export function haveDraftTemplatesChanged(
   const newIds = newTemplates.map(dt => dt.template.id).join(',');
   
   if (oldIds !== newIds) return true;
-  
+
   // Deep check each template for significant changes
   for (let i = 0; i < oldTemplates.length; i++) {
     const oldTemplate = oldTemplates[i];

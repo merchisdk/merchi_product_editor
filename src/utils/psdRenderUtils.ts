@@ -87,38 +87,6 @@ async function isValidImageDataUrl(dataUrl: string): Promise<boolean> {
 }
 
 /**
- * Creates a debug visualization of a PSD layer
- * 
- * @param ctx Canvas context to draw on
- * @param layer PSD layer data
- * @param color Color to use for visualization
- */
-function visualizeLayer(ctx: CanvasRenderingContext2D, layer: any, color: string = 'rgba(255,0,0,0.2)'): void {
-  if (!layer) return;
-  
-  const left = layer.left || 0;
-  const top = layer.top || 0;
-  const width = (layer.right || 0) - left;
-  const height = (layer.bottom || 0) - top;
-  
-  // Draw a colored rectangle
-  ctx.save();
-  ctx.fillStyle = color;
-  ctx.fillRect(left, top, width, height);
-  
-  // Draw border
-  ctx.strokeStyle = color.replace('0.2', '0.8');
-  ctx.lineWidth = 2;
-  ctx.strokeRect(left, top, width, height);
-  
-  // Draw label
-  ctx.fillStyle = 'black';
-  ctx.font = '12px Arial';
-  ctx.fillText(layer.name || 'unnamed', left + 5, top + 15);
-  ctx.restore();
-}
-
-/**
  * Creates a fallback preview image with debugging information
  * 
  * @param width Width of the image
@@ -249,11 +217,6 @@ export async function renderDraftPreviewsWithLayers(
     
     // Check if there are any actual rendered layers we need to use
     const hasRenderedLayers = draftPreviewLayers.some(layer => layer.renderedLayer !== null);
-    
-    // Check if the file is likely a PSD before trying simple image loading
-    const isPsdFile = draftPreview.file.viewUrl.toLowerCase().endsWith('.psd') || 
-                     (draftPreview.file.mimetype && 
-                      draftPreview.file.mimetype.includes('photoshop'));
     
     // Only try the simple approach if it's not a PSD file
     let simplePngDataUrl: string | null = null;
