@@ -5,6 +5,7 @@ import ProductPreviews from './ProductPreviews';
 import Toolbar from './Toolbar';
 import LoadingOverlay from './LoadingOverlay';
 import TextToolbar from './TextToolbar';
+import LayerPanel from './LayerPanel';
 import '../styles/ProductEditor.css';
 
 const ProductEditor: React.FC = () => {
@@ -17,6 +18,7 @@ const ProductEditor: React.FC = () => {
     showPreview,
     isCanvasLoading,
     selectedTextObject,
+    showLayerPanel,
   } = useProductEditor();
 
   const disableCanvasEvents = (e: React.MouseEvent) => {
@@ -56,6 +58,7 @@ const ProductEditor: React.FC = () => {
             <canvas ref={canvasRef} />
           </div>
           {!isMobileView && <FloatingToolbar />}
+          {showLayerPanel && <LayerPanel />}
         </div>
 
         {showPreview && (
