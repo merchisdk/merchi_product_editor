@@ -109,6 +109,8 @@ function CustomButton() {
 | onCancel | () => void | Yes | - | Callback function when canceling the edit |
 | variations | Variation[] | Yes | [] | Array of variations to apply to the templates |
 | groupVariations | Variation[] | Yes | [] | Array of group variations to apply |
+| fontOptions | FontOption[] | No | Default list | Custom fonts for text toolbar |
+| colorPalette | (string \| null)[][] | No | Default palette | Custom color palette for text toolbar |
 
 ## Context API
 
