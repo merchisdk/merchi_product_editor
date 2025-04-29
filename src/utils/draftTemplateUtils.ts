@@ -1,3 +1,5 @@
+import { DraftPreview, DraftTemplateData, RenderedDraftPreview, DraftPreviewLayer } from '../types';
+
 /**
  * Compares two arrays of draft templates to determine if they've changed significantly
  * This helps prevent unnecessary re-renders and infinite loops
@@ -41,4 +43,28 @@ export function haveDraftTemplatesChanged(
   
   // Templates are effectively the same
   return false;
+}
+
+export function mapPreviewsWithRendered(
+  draftTemplates: DraftTemplateData[],
+  draftPreviews: DraftPreview[],
+  renderedDraftPreviews: RenderedDraftPreview[]
+): { draftPreview: DraftPreview; draftPreviewLayers: { layerName: string | undefined; renderedLayer: RenderedDraftPreview | null }[] }[] {
+  return draftPreviews.map((draftPreview: DraftPreview) => {
+    // Map each draftTemplate to its associated layers and rendered layers
+    const draftPreviewLayers = draftTemplates.flatMap((dTD: DraftTemplateData) => {
+      const layers = dTD?.template?.draftPreviewLayers || [];
+      return layers
+        .filter((dPL: DraftPreviewLayer) => dPL?.draftPreview?.id === draftPreview.id)
+        .map(layer => {
+          const renderedLayer = renderedDraftPreviews.find(rDR => rDR?.templateId === dTD?.template?.id);
+          return { layerName: layer?.layerName, renderedLayer: renderedLayer || null };
+        });
+    });
+
+    return {
+      draftPreview,
+      draftPreviewLayers,
+    };
+  });
 }

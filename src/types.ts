@@ -224,3 +224,23 @@ export interface SavedCanvasObject {
   src?: string;
   [key: string]: any; // Allow for other properties
 }
+
+// New DraftTemplateData type definition that includes all requested properties
+export interface DraftTemplateData {
+  template: DraftTemplate;
+  variationFieldIds: number[]; // List of IDs for all variation fields in this template
+  variationObjects: any[];     // Objects associated with the variation fields
+}
+
+export interface RenderedDraftPreview {
+  templateId: number;
+  image: string;
+}
+
+export interface MappedPreview {
+  draftPreview: DraftPreview;
+  draftPreviewLayers: {
+    layerName: string | undefined;
+    renderedLayer: RenderedDraftPreview | null;
+  }[];
+}
