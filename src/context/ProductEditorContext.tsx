@@ -8,7 +8,10 @@ import { setupKeyboardEvents } from '../utils/keyboard';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { setNewDraftPreviews } from '../utils/previewUtils';
 import { debounce } from 'lodash';
-import { renderClippedImage } from '../utils/canvasUtils';
+import { renderClippedImage } from '../utils/canvasUtils';import { FontOption, defaultFontOptions } from '../config/fontConfig';
+import { defaultPalette } from '../config/colorConfig';
+import { v4 as uuidv4 } from 'uuid';
+
 
 interface ProductEditorContextType {
   // States
@@ -39,6 +42,14 @@ interface ProductEditorContextType {
   recordVariationFieldObjectsOnCanvas: () => void;
   togglePreview: () => void;
   updateSelectedText: (props: Partial<fabric.IText>) => void;
+  fontOptions: FontOption[];
+  colorPalette: (string | null)[][];
+  showLayerPanel: boolean;
+  toggleLayerPanel: () => void;
+  selectedObjectId: string | null;
+  setSelectedObjectId: (id: string | null) => void;
+  selectObject: (obj: fabric.Object | null) => void;
+  deleteObject: (obj: fabric.Object) => void;
 
   // Props
   canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -60,6 +71,8 @@ interface ProductEditorProviderProps {
   onSave: () => void;
   onCancel: () => void;
   hookForm?: any; // Add the form methods prop
+  fontOptions?: FontOption[];
+  colorPalette?: (string | null)[][];
 }
 
 export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
@@ -72,17 +85,19 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   onSave,
   onCancel,
   hookForm = null, // Initialize with null
+  fontOptions = defaultFontOptions,
+  colorPalette = defaultPalette,
 }) => {
   
   // Create refs to store the latest values to prevent excessive re-renders
   const allVariationsRef = useRef<any[]>([]);
   const productRef = useRef(product);
-  
+
   // Update product ref when it changes
   useEffect(() => {
     productRef.current = product;
   }, [product]);
-  
+
   const [
     draftTemplates,
     setDraftTemplates
@@ -97,6 +112,12 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [showPreview, setShowPreview] = useState(true);
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
+
+  const [updateCounter, setUpdateCounter] = useState(0);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
+  // Add state for selected object ID
+  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -159,6 +180,11 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Function to toggle preview visibility
   const togglePreview = () => {
     setShowPreview(prev => !prev);
+  };
+
+  // Function to toggle layer panel visibility
+  const toggleLayerPanel = () => {
+    setShowLayerPanel(prev => !prev);
   };
 
   // Function to update selected text object properties
@@ -234,11 +260,13 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         width,
         height,
         backgroundColor: '#ffffff',
+        // not to bring the selected object to the top visually
+        preserveObjectStacking: true
       });
 
       // Now load the template image and add variations
       const templateData = draftTemplates.find(dt => dt.template.id === draftTemplate.id);
-      
+
       await renderEditorOrPreview(
         newCanvas,
         (templateData as any).template,
@@ -297,7 +325,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       // Extract the variations from the watch values
       const variationsGroups = watchValues.variationsGroups;
       const variations = watchValues.variations;
-      
+
       // Process the latest variations to update allVariationsRef
       const newAllVariations = variationsGroups?.[groupIndex]?.variations
         ? [...variationsGroups[groupIndex].variations]
@@ -344,6 +372,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           width,
           height,
           backgroundColor: '#ffffff',
+          preserveObjectStacking: true
         });
         // Update state immediately to ensure it's available for event handlers
         setCanvas(fabricCanvasInstance);
@@ -444,14 +473,22 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     const handleSelection = (e: fabric.IEvent) => {
       const activeObject = fabricCanvasInstance.getActiveObject();
       // Check if the active object is an IText instance
+      
+      // Ensure the selected object has an ID
+      if (activeObject && !(activeObject as any).id) {
+        (activeObject as any).id = uuidv4();
+      }
+      setSelectedObjectId((activeObject as any)?.id || null);
+      
       if (activeObject instanceof fabric.IText) {
         setSelectedTextObject(activeObject);
       } else {
         setSelectedTextObject(null);
       }
     };
-
-    const handleSelectionCleared = () => {
+    
+    const handleSelectionCleared = (e: fabric.IEvent) => {
+      setSelectedObjectId(null); // Clear selection in context
       setSelectedTextObject(null);
     };
 
@@ -491,6 +528,32 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         isRendering = false;
       }
     };
+
+
+      // Add unique ID to objects if they don't have one
+      const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
+        canvasInstance.getObjects().forEach(obj => {
+          if (!(obj as any).id) {
+            (obj as any).id = uuidv4();
+            console.log(`Assigned ID ${(obj as any).id} to object`, obj);
+          }
+        });
+      };
+      // Ensure initial objects have IDs
+      if (fabricCanvasInstance) {
+        ensureObjectIds(fabricCanvasInstance);
+      }
+
+      // Attach listeners
+      fabricCanvasInstance?.on('selection:created', handleSelection);
+      fabricCanvasInstance?.on('selection:updated', handleSelection);
+      fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
+      // Also update IDs when new objects are added
+      fabricCanvasInstance?.on('object:added', (e) => {
+        if (e.target && !(e.target as any).id) {
+          (e.target as any).id = uuidv4();
+        }
+      });
 
     // setup keyboard events
     const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvasInstance, () => {
@@ -538,7 +601,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Set up the debounced watch subscription
   useEffect(() => {
     if (!hookForm) return;
-    
+
     // Subscribe to form changes
     const subscription = hookForm.watch((value: any) => {
       debouncedWatch({
@@ -546,7 +609,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         variations: value.variations,
       });
     });
-    
+
     // Clean up subscription
     return () => subscription.unsubscribe();
   }, [hookForm, debouncedWatch]);
@@ -591,6 +654,98 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     }
   }, [canvas, selectedTemplate]);
 
+  const selectObject = (obj: fabric.Object | null) => {
+    if (canvas) {
+      if (obj) {
+        if (!(obj as any).id) {
+          (obj as any).id = uuidv4();
+        }
+        canvas.setActiveObject(obj);
+        setSelectedObjectId((obj as any).id);
+      } else {
+        canvas.discardActiveObject();
+        setSelectedObjectId(null);
+      }
+      canvas.requestRenderAll();
+    }
+  };
+
+  const deleteObject = useCallback((obj: fabric.Object) => {
+    if (!canvas || !obj) return;
+
+    try {
+      setIsCanvasLoading(true);
+
+      // remove the object from the canvas
+      canvas.remove(obj);
+      canvas.renderAll();
+
+      const fieldId = (obj as any)?.fieldId;
+      const fileId = (obj as any)?.fileId;
+
+      if (fieldId) {
+        const currentTemplateId = selectedTemplate;
+
+        // update draftTemplates
+        const updatedDraftTemplates = draftTemplates.map(dt => {
+          if (dt.template.id === currentTemplateId) {
+            return {
+              ...dt,
+              variationObjects: dt.variationObjects.filter((vo: any) => vo.fieldId !== fieldId)
+            };
+          }
+          return dt;
+        });
+        setDraftTemplates(updatedDraftTemplates);
+
+        // update the form state
+        if (hookForm) {
+          const hasVariationsGroups = 'variationsGroups' in hookForm.getValues();
+          const variationsField = hasVariationsGroups ?
+            `variationsGroups.${groupIndex}.variations` : 'variations';
+          const values = hookForm.getValues(variationsField) || [];
+
+          const updatedValues = values.map((variation: any) => {
+            if (variation?.variationField?.id === fieldId) {
+              // file type variation and has fileId
+              // only delete the specific file
+              if (variation.variationFiles?.length > 0 && fileId) {
+                const updatedFiles = variation.variationFiles.filter((file: any) => file.id !== fileId);
+                return {
+                  ...variation,
+                  value: updatedFiles.length === 0 ? null : variation.value,
+                  variationFiles: updatedFiles
+                };
+              }
+              // non file type or no fileId
+              // clear the whole field
+              else if (!fileId) {
+                return {
+                  ...variation,
+                  value: null,
+                  variationFiles: variation.variationFiles ? [] : undefined
+                };
+              }
+            }
+            return variation;
+          });
+
+          hookForm.setValue(variationsField, updatedValues);
+        }
+      }
+
+      // clear the selection state
+      setSelectedObjectId(null);
+      setSelectedTextObject(null);
+      setIsCanvasLoading(false);
+
+      onSave && onSave();
+    } catch (error) {
+      console.error('Error in deleteObject:', error);
+      setIsCanvasLoading(false);
+    }
+  }, [canvas, draftTemplates, selectedTemplate, hookForm, groupIndex, onSave]);
+
   return (
     <ProductEditorContext.Provider
       value={{
@@ -634,6 +789,14 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         recordVariationFieldObjectsOnCanvas,
         togglePreview,
         updateSelectedText,
+        fontOptions,
+        colorPalette,
+        showLayerPanel,
+        toggleLayerPanel,
+        selectedObjectId,
+        setSelectedObjectId,
+        selectObject,
+        deleteObject,
 
         // Props
         canvasRef,
