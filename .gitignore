@@ -19,3 +19,7 @@ build/
 .env
 .env.local
 .env.*.local 
+
+# Yalc
+.yalc/
+yalc.lock

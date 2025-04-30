@@ -110,3 +110,9 @@
 .mobile-bottom-toolbar .toolbar-content .toolbar-button {
   border: none;
 }
+
+.toolbar-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}

@@ -12,7 +12,7 @@ interface ImageZoomModalProps {
   productName: string;
   totalImages: number;
   currentIndex: number;
-  allImages: { viewUrl: string }[];
+  allImages: any[];
 }
 
 const ImageZoomModal = ({
