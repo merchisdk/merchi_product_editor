@@ -85,7 +85,15 @@ const TextToolbar: React.FC = () => {
       <div className="color-picker-trigger" onClick={handleSwatchClick} title="Change text color">
         <div
           className="color-picker-swatch"
-          style={{ backgroundColor: currentColor }}
+          style={{
+            backgroundColor: currentColor,
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            minWidth: '28px',
+            minHeight: '28px',
+            flexShrink: 0
+          }}
         />
         <span className="color-picker-label">Color</span>
       </div>

@@ -1,20 +1,27 @@
 import { StylesConfig, OptionProps, SingleValueProps } from 'react-select';
-import { FontOption } from '../config/fontConfig'; 
+import { FontOption } from '../config/fontConfig';
+
+const isMobile = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth < 480;
+  }
+  return false;
+};
 
 export const customStyles: StylesConfig<FontOption, false> = {
   option: (provided, state: OptionProps<FontOption>) => ({
     ...provided,
     fontFamily: state.data.value,
     padding: '10px 15px',
-    fontSize: '16px', 
+    fontSize: '16px',
     backgroundColor: state.isFocused ? '#eee' : state.isSelected ? '#ddd' : 'white',
     color: '#333',
     cursor: 'pointer',
-    transition: 'background-color 0.1s ease', 
+    transition: 'background-color 0.1s ease',
   }),
   control: (provided) => ({
     ...provided,
-    minWidth: 180, 
+    minWidth: isMobile() ? 160 : 180,
     minHeight: 38,
     border: '1px solid #ccc',
     borderRadius: '4px',
@@ -28,7 +35,7 @@ export const customStyles: StylesConfig<FontOption, false> = {
     ...provided,
     fontFamily: state.data.value,
     color: '#333',
-    fontSize: '14px',
+    fontSize: isMobile() ? '13px' : '14px',
   }),
   input: (provided) => ({
     ...provided,
