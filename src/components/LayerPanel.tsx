@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fabric } from 'fabric';
 import { useProductEditor } from '../context/ProductEditorContext';
-import { Close, Drag, TextAlignCenter, Image as ImageIcon } from 'grommet-icons';
+import { Close, Drag, TextAlignCenter, Image as ImageIcon, Up, Down } from 'grommet-icons';
 import '../styles/LayerPanel.css';
 
 const reorder = (list: any[], startIndex: number, endIndex: number) => {
@@ -14,7 +14,7 @@ const reorder = (list: any[], startIndex: number, endIndex: number) => {
 const LAYER_ITEM_HEIGHT_PX = 45;
 
 const LayerPanel: React.FC = () => {
-  const { canvas, toggleLayerPanel, selectedObjectId, selectObject } = useProductEditor();
+  const { canvas, toggleLayerPanel, selectedObjectId, selectObject, isMobileView } = useProductEditor();
   const [layers, setLayers] = useState<fabric.Object[]>([]);
   const dragItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
@@ -69,18 +69,21 @@ const LayerPanel: React.FC = () => {
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+    if (isMobileView) return;
     dragItemIndex.current = index;
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => setIsDraggingOver(true), 0);
   };
 
   const handleDragEnterItem = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+    if (isMobileView) return;
     e.preventDefault();
     dragOverItemIndex.current = index;
     setDragOverIndexVisual(index);
   };
 
   const handleDragLeaveList = (e: React.DragEvent<HTMLUListElement>) => {
+    if (isMobileView) return;
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       dragOverItemIndex.current = null;
       setDragOverIndexVisual(null);
@@ -88,11 +91,13 @@ const LayerPanel: React.FC = () => {
   };
 
   const handleDragOverList = (e: React.DragEvent<HTMLUListElement>) => {
+    if (isMobileView) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLUListElement>) => {
+    if (isMobileView) return;
     e.preventDefault();
     const sourceIndex = dragItemIndex.current;
     const destinationIndex = dragOverItemIndex.current;
@@ -121,10 +126,47 @@ const LayerPanel: React.FC = () => {
   };
 
   const handleDragEnd = (e: React.DragEvent<HTMLLIElement>) => {
+    if (isMobileView) return;
     setIsDraggingOver(false);
     setDragOverIndexVisual(null);
     dragItemIndex.current = null;
     dragOverItemIndex.current = null;
+  };
+
+  const moveLayerUp = (index: number) => {
+    if (index <= 0 || !canvas) return;
+
+    const objectToMove = layers[index];
+    const objectAbove = layers[index - 1];
+
+    const fabricIndexOfAbove = canvas.getObjects().indexOf(objectAbove);
+    if (fabricIndexOfAbove < 0) {
+      console.error("Could not find objectAbove in canvas stack for moveLayerUp");
+      return;
+    }
+
+    const targetFabricIndex = fabricIndexOfAbove;
+    canvas.moveTo(objectToMove, targetFabricIndex);
+    setLayers(prevLayers => reorder(prevLayers, index, index - 1));
+    canvas.requestRenderAll();
+  };
+
+  const moveLayerDown = (index: number) => {
+    if (index >= layers.length - 1 || !canvas) return;
+
+    const objectToMove = layers[index];
+    const objectBelow = layers[index + 1];
+
+    const fabricIndexOfBelow = canvas.getObjects().indexOf(objectBelow);
+    if (fabricIndexOfBelow < 0) {
+      console.error("Could not find objectBelow in canvas stack for moveLayerDown");
+      return;
+    }
+
+    const targetFabricIndex = fabricIndexOfBelow;
+    canvas.moveTo(objectToMove, targetFabricIndex);
+    setLayers(prevLayers => reorder(prevLayers, index, index + 1));
+    canvas.requestRenderAll();
   };
 
   const handleLayerClick = (layer: fabric.Object) => {
@@ -149,10 +191,10 @@ const LayerPanel: React.FC = () => {
           const layerInfo = getLayerInfo(layer);
           const layerId = (layer as any).id;
           const isSelected = layerId && layerId === selectedObjectId;
-          const isDraggingThisItem = isDraggingOver && dragItemIndex.current === index;
+          const isDraggingThisItem = !isMobileView && isDraggingOver && dragItemIndex.current === index;
 
           let transformStyle = 'translateY(0px)';
-          if (isDraggingOver && dragItemIndex.current !== null && dragOverIndexVisual !== null && !isDraggingThisItem) {
+          if (!isMobileView && isDraggingOver && dragItemIndex.current !== null && dragOverIndexVisual !== null && !isDraggingThisItem) {
             const draggingFromIndex = dragItemIndex.current;
             const hoveringOverIndex = dragOverIndexVisual;
 
@@ -167,7 +209,7 @@ const LayerPanel: React.FC = () => {
           return (
             <li
               key={`layer-${layerId || index}`}
-              draggable
+              draggable={!isMobileView}
               onDragStart={(e) => handleDragStart(e, index)}
               onDragEnter={(e) => handleDragEnterItem(e, index)}
               onDragEnd={handleDragEnd}
@@ -177,9 +219,31 @@ const LayerPanel: React.FC = () => {
             >
               <span className="layer-icon">{layerInfo.icon}</span>
               <span className="layer-name">{layerInfo.name}</span>
-              <span className="layer-drag-indicator">
-                <Drag size="small" />
-              </span>
+
+              {isMobileView ? (
+                <div className="layer-mobile-controls">
+                  <button
+                    className="layer-move-button"
+                    onClick={(e) => { e.stopPropagation(); moveLayerUp(index); }}
+                    disabled={index === 0}
+                    title="Move Up"
+                  >
+                    <Up size="small" />
+                  </button>
+                  <button
+                    className="layer-move-button"
+                    onClick={(e) => { e.stopPropagation(); moveLayerDown(index); }}
+                    disabled={index === layers.length - 1}
+                    title="Move Down"
+                  >
+                    <Down size="small" />
+                  </button>
+                </div>
+              ) : (
+                <span className="layer-drag-indicator">
+                  <Drag size="small" />
+                </span>
+              )}
             </li>
           );
         })}

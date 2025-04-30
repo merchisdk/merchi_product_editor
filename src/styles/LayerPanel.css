@@ -10,7 +10,6 @@
   z-index: 10;
   display: flex;
   flex-direction: column;
-  font-family: sans-serif;
 }
 
 .layer-panel-header {
@@ -146,4 +145,35 @@
 
 .layer-list.is-dragging-active .layer-item {
   transition: transform 0.2s ease;
+}
+
+/* Mobile layer move buttons */
+.layer-mobile-controls {
+  display: flex;
+  margin-left: auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.layer-move-button {
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 0;
+}
+
+.layer-move-button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  color: #303DBF;
+}
+
+.layer-move-button:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
