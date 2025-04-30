@@ -8,10 +8,11 @@ import { setupKeyboardEvents } from '../utils/keyboard';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { setNewDraftPreviews } from '../utils/previewUtils';
 import { debounce } from 'lodash';
-import { renderClippedImage } from '../utils/canvasUtils';import { FontOption, defaultFontOptions } from '../config/fontConfig';
+import { renderClippedImage } from '../utils/canvasUtils';
+import { FontOption, defaultFontOptions } from '../config/fontConfig';
 import { defaultPalette } from '../config/colorConfig';
 import { v4 as uuidv4 } from 'uuid';
-
+import { getDeviceAdjustedDimensions } from '../utils/deviceUtils';
 
 interface ProductEditorContextType {
   // States
@@ -79,8 +80,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   children,
   groupIndex = 0,
   product,
-  width = 800,
-  height = 600,
+  width: initialWidth = 800, // Rename prop
+  height: initialHeight = 600, // Rename prop
   job,
   onSave,
   onCancel,
@@ -88,7 +89,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   fontOptions = defaultFontOptions,
   colorPalette = defaultPalette,
 }) => {
-  
+
   // Create refs to store the latest values to prevent excessive re-renders
   const allVariationsRef = useRef<any[]>([]);
   const productRef = useRef(product);
@@ -97,6 +98,17 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   useEffect(() => {
     productRef.current = product;
   }, [product]);
+
+  // Determine dimensions and mobile status once at initialization
+  const deviceSettings = useMemo(() =>
+    getDeviceAdjustedDimensions(initialWidth, initialHeight),
+    [initialWidth, initialHeight]
+  );
+
+  // Use dimensions from device settings
+  const canvasWidth = deviceSettings.width;
+  const canvasHeight = deviceSettings.height;
+  const isMobileView = deviceSettings.isMobile;
 
   const [
     draftTemplates,
@@ -113,11 +125,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
 
-  const [updateCounter, setUpdateCounter] = useState(0);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
-  // Add state for selected object ID
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
-
 
   // Add a new state to track saved objects
   const [savedObjects, setSavedObjects] = useState<SavedCanvasObject[]>([]);
@@ -141,22 +150,22 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     // Create a fresh array instead of appending to existing
     const updatedSavedObjects: SavedCanvasObject[] = [];
     let hasChanges = false;
-    
+
     // Get all objects from the canvas
     const objects = canvas.getObjects();
-    
+
     // Filter for objects that have a fieldId property (variation field objects)
     objects.forEach((obj: any) => {
       // Get fieldId from either direct property or from variationField
 
       const { fieldId } = obj;
-                     
+
       if (fieldId) {
         // Also save a serialized version for the savedObjects state
         const updatedObject = {
           ...obj,
         };
-        
+
         if (obj instanceof fabric.Image) {
           Object.assign(updatedObject, {
             width: obj.width,
@@ -192,7 +201,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     if (selectedTextObject && canvas && selectedTemplate !== null) {
       selectedTextObject.set(props);
       canvas.requestRenderAll();
-      
+
       // Record the state changes after updating text properties
       // This ensures color changes and other styling updates are saved
       setTimeout(() => {
@@ -257,12 +266,15 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       }
 
       const newCanvas = new fabric.Canvas(canvasRef.current, {
-        width,
-        height,
+        width: canvasWidth,
+        height: canvasHeight,
         backgroundColor: '#ffffff',
         // not to bring the selected object to the top visually
         preserveObjectStacking: true
       });
+
+      // Log dimensions for template change
+      console.log('Template change: Creating canvas with dimensions:', { width: canvasWidth, height: canvasHeight });
 
       // Now load the template image and add variations
       const templateData = draftTemplates.find(dt => dt.template.id === draftTemplate.id);
@@ -272,8 +284,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         (templateData as any).template,
         (templateData as any).variationObjects,
         savedObjects,
-        height,
-        width,
+        canvasHeight,
+        canvasWidth,
       );
 
       // Update the state with the new canvas
@@ -286,7 +298,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         if (showGrid) {
           try {
             if (newCanvas.getElement() && newCanvas.getElement().parentNode) {
-              drawGrid(newCanvas, width, height, 20, '#a0a0a0', showGrid);
+              drawGrid(newCanvas, canvasWidth, canvasHeight, 20, '#a0a0a0', showGrid);
             }
           } catch (e) {
             console.error('Error drawing grid after template change:', e);
@@ -343,7 +355,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
       // Store the canvas instance for this effect run
       let fabricCanvasInstance = canvas;
-      
+
       // Only update if they've actually changed
       if (haveDraftTemplatesChanged(draftTemplates, newDraftTemplates)) {
         setDraftTemplates(newDraftTemplates);
@@ -370,11 +382,15 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         );
       } else if (canvasRef.current) {
         fabricCanvasInstance = new fabric.Canvas(canvasRef.current, {
-          width,
-          height,
+          width: canvasWidth,
+          height: canvasHeight,
           backgroundColor: '#ffffff',
           preserveObjectStacking: true
         });
+
+        // Log dimensions for debugging
+        console.log('Initializing canvas with dimensions:', { width: canvasWidth, height: canvasHeight });
+
         // Update state immediately to ensure it's available for event handlers
         setCanvas(fabricCanvasInstance);
       } else {
@@ -393,14 +409,14 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           templateData?.template || {},
           templateData?.variationObjects || [],
           savedObjects,
-          height,
-          width,
+          canvasHeight,
+          canvasWidth,
         );
 
         if (fabricCanvasInstance.getElement() && fabricCanvasInstance.getElement().parentNode) {
-          drawGrid(fabricCanvasInstance, width, height, 20, '#a0a0a0', showGrid);
+          drawGrid(fabricCanvasInstance, canvasWidth, canvasHeight, 20, '#a0a0a0', showGrid);
         }
-        
+
         setIsCanvasLoading(false);
       } else {
         setIsCanvasLoading(false);
@@ -411,8 +427,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     draftTemplates,
     canvasRef,
     showGrid,
-    width,
-    height,
+    canvasWidth,
+    canvasHeight,
     savedObjects,
     canvas,
     selectedTemplate,
@@ -423,7 +439,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   // Set up the debounced watch subscription
   useEffect(() => {
     if (!hookForm) return;
-    
+
     // Subscribe to form changes
     const subscription = hookForm.watch((value: any) => {
       debouncedWatch({
@@ -431,7 +447,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         variations: value.variations,
       });
     });
-    
+
     // Clean up subscription
     return () => subscription.unsubscribe();
   }, [hookForm, debouncedWatch]);
@@ -453,7 +469,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
   // Extract event handler setup to a separate function to avoid recreating in debounced watch
   const setupEventHandlers = (fabricCanvasInstance: fabric.Canvas, selectedTemplate: number | null) => {
-    if (!fabricCanvasInstance) return () => {};
+    if (!fabricCanvasInstance) return () => { };
 
     // Add a flag to prevent recursive calls
     let isRendering = false;
@@ -473,7 +489,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
             const updatedObject = {
               ...obj,
             };
-            
+
             if (obj instanceof fabric.Image) {
               Object.assign(updatedObject, {
                 width: obj.width,
@@ -481,12 +497,12 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
                 src: obj.getSrc(),
               });
             }
-            
+
             updatedSavedObjects.push(updatedObject);
             hasChanges = true;
           }
         });
-        
+
         if (hasChanges) {
           setSavedObjects(updatedSavedObjects);
         }
@@ -494,7 +510,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         console.warn('Cannot record changes - missing canvas or templateId');
       }
     };
-    
+
     // Create a bound version for event handling
     const boundRecordChanges = createEventHandler(recordChanges);
 
@@ -502,20 +518,20 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     const handleSelection = (e: fabric.IEvent) => {
       const activeObject = fabricCanvasInstance.getActiveObject();
       // Check if the active object is an IText instance
-      
+
       // Ensure the selected object has an ID
       if (activeObject && !(activeObject as any).id) {
         (activeObject as any).id = uuidv4();
       }
       setSelectedObjectId((activeObject as any)?.id || null);
-      
+
       if (activeObject instanceof fabric.IText) {
         setSelectedTextObject(activeObject);
       } else {
         setSelectedTextObject(null);
       }
     };
-    
+
     const handleSelectionCleared = (e: fabric.IEvent) => {
       setSelectedObjectId(null); // Clear selection in context
       setSelectedTextObject(null);
@@ -523,7 +539,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     const updateRenderedDraftPreviews = async () => {
       const templateId = selectedTemplate;
-      const renderedImage = await renderClippedImage(fabricCanvasInstance, {format: 'png'});
+      const renderedImage = await renderClippedImage(fabricCanvasInstance, { format: 'png' });
 
       if (renderedImage && templateId) {
         const previews = [...renderedDraftPreviews];
@@ -546,7 +562,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     const handleAfterRender = async () => {
       // Prevent recursive calls
       if (isRendering) return;
-      
+
       try {
         isRendering = true;
         setLoadingPreviews(true);
@@ -559,30 +575,30 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     };
 
 
-      // Add unique ID to objects if they don't have one
-      const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
-        canvasInstance.getObjects().forEach(obj => {
-          if (!(obj as any).id) {
-            (obj as any).id = uuidv4();
-            console.log(`Assigned ID ${(obj as any).id} to object`, obj);
-          }
-        });
-      };
-      // Ensure initial objects have IDs
-      if (fabricCanvasInstance) {
-        ensureObjectIds(fabricCanvasInstance);
-      }
-
-      // Attach listeners
-      fabricCanvasInstance?.on('selection:created', handleSelection);
-      fabricCanvasInstance?.on('selection:updated', handleSelection);
-      fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
-      // Also update IDs when new objects are added
-      fabricCanvasInstance?.on('object:added', (e) => {
-        if (e.target && !(e.target as any).id) {
-          (e.target as any).id = uuidv4();
+    // Add unique ID to objects if they don't have one
+    const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
+      canvasInstance.getObjects().forEach(obj => {
+        if (!(obj as any).id) {
+          (obj as any).id = uuidv4();
+          console.log(`Assigned ID ${(obj as any).id} to object`, obj);
         }
       });
+    };
+    // Ensure initial objects have IDs
+    if (fabricCanvasInstance) {
+      ensureObjectIds(fabricCanvasInstance);
+    }
+
+    // Attach listeners
+    fabricCanvasInstance?.on('selection:created', handleSelection);
+    fabricCanvasInstance?.on('selection:updated', handleSelection);
+    fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
+    // Also update IDs when new objects are added
+    fabricCanvasInstance?.on('object:added', (e) => {
+      if (e.target && !(e.target as any).id) {
+        (e.target as any).id = uuidv4();
+      }
+    });
 
     // setup keyboard events
     const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvasInstance, () => {
@@ -595,14 +611,14 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     fabricCanvasInstance.on('selection:updated', handleSelection);
     fabricCanvasInstance.on('selection:cleared', handleSelectionCleared);
     fabricCanvasInstance.on('after:render', handleAfterRender);
-    
+
     // Add event listeners for object modifications
     fabricCanvasInstance.on('object:modified', boundRecordChanges);
     fabricCanvasInstance.on('object:moved', boundRecordChanges);
     fabricCanvasInstance.on('object:scaled', boundRecordChanges);
     fabricCanvasInstance.on('object:rotated', boundRecordChanges);
     fabricCanvasInstance.on('text:changed', boundRecordChanges);
-    
+
     // Add handlers for more specific events that might be triggered by color changes
     fabricCanvasInstance.on('object:changed', boundRecordChanges);
     fabricCanvasInstance.on('canvas:updated', boundRecordChanges);
@@ -614,7 +630,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       fabricCanvasInstance.off('selection:updated', handleSelection);
       fabricCanvasInstance.off('selection:cleared', handleSelectionCleared);
       fabricCanvasInstance.off('after:render', handleAfterRender);
-      
+
       fabricCanvasInstance.off('object:modified', boundRecordChanges);
       fabricCanvasInstance.off('object:moved', boundRecordChanges);
       fabricCanvasInstance.off('object:scaled', boundRecordChanges);
@@ -622,50 +638,30 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       fabricCanvasInstance.off('text:changed', boundRecordChanges);
       fabricCanvasInstance.off('object:changed', boundRecordChanges);
       fabricCanvasInstance.off('canvas:updated', boundRecordChanges);
-      
+
       cleanupKeyboardEvents();
     };
   };
 
-  const [isMobileView, setIsMobileView] = useState<boolean>(false);
-  // Check if we're on a small screen
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const updateViewMode = () => {
-        setIsMobileView(window.innerWidth < 480);
-      }
-
-      updateViewMode();
-      window.addEventListener('resize', updateViewMode);
-
-      return () => window.removeEventListener('resize', updateViewMode);
-    }
-  }, []);
-
-  // draw grid when the grid state or canvas size changes
-  useEffect(() => {
-    if (canvas) {
-      try {
-        if (!canvas.getElement() || !canvas.getElement().parentNode) {
-          return;
-        }
-
-        drawGrid(canvas, width, height, 20, '#a0a0a0', showGrid);
-      } catch (error) {
-        console.error('Error in drawGrid effect hook:', error);
-      }
-    }
-  }, [showGrid, width, height, canvas]);
-
   // Move setupEventHandlers call to a useEffect hook
   useEffect(() => {
     if (canvas) {
+      try {
+        if (canvas.getElement() && canvas.getElement().parentNode) {
+          drawGrid(canvas, canvasWidth, canvasHeight, 20, '#a0a0a0', showGrid);
+          canvas.renderAll();
+        }
+      } catch (error) {
+        console.error('Error drawing/clearing grid:', error);
+      }
+
+      // Setup event handlers
       const cleanupEventHandlers = setupEventHandlers(canvas, selectedTemplate);
       return () => {
         cleanupEventHandlers();
       };
     }
-  }, [canvas, selectedTemplate]);
+  }, [canvas, selectedTemplate, showGrid, canvasWidth, canvasHeight]);
 
   const selectObject = (obj: fabric.Object | null) => {
     if (canvas) {
@@ -813,10 +809,10 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
         // Props
         canvasRef,
-        height,
+        height: canvasHeight,
         job,
         product,
-        width,
+        width: canvasWidth,
       }}
     >
       {children}
