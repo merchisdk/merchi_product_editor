@@ -57,7 +57,7 @@ const ProductEditor: React.FC = () => {
           <div className="canvas-area" onClick={disableCanvasEvents}>
             <canvas ref={canvasRef} />
           </div>
-          {!isMobileView && <FloatingToolbar />}
+          {!isMobileView && !isCanvasLoading && <FloatingToolbar />}
           {showLayerPanel && <LayerPanel />}
         </div>
 
@@ -66,7 +66,7 @@ const ProductEditor: React.FC = () => {
         )}
       </div>
 
-      {isMobileView && (
+      {isMobileView && !isCanvasLoading && (
         <div className="mobile-bottom-toolbar">
           <Toolbar />
         </div>
