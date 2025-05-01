@@ -8,9 +8,10 @@ import { setupKeyboardEvents } from '../utils/keyboard';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { setNewDraftPreviews } from '../utils/previewUtils';
 import { debounce } from 'lodash';
-import { renderClippedImage } from '../utils/canvasUtils';import { FontOption, defaultFontOptions } from '../config/fontConfig';
+import { renderClippedImage, renderCanvasWithoutGrid } from '../utils/canvasUtils';import { FontOption, defaultFontOptions } from '../config/fontConfig';
 import { defaultPalette } from '../config/colorConfig';
 import { v4 as uuidv4 } from 'uuid';
+import { UseFormReturn } from 'react-hook-form';
 
 
 interface ProductEditorContextType {
@@ -53,10 +54,13 @@ interface ProductEditorContextType {
 
   // Props
   canvasRef: React.RefObject<HTMLCanvasElement>;
+  groupIndex: number;
   height: number;
+  inputName: string;
   job: Job;
   product: Product;
   width: number;
+  hookForm: UseFormReturn<any> | null;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -70,7 +74,7 @@ interface ProductEditorProviderProps {
   job: Job;
   onSave: () => void;
   onCancel: () => void;
-  hookForm?: any; // Add the form methods prop
+  hookForm?: UseFormReturn<any> | null; // Type the form methods prop
   fontOptions?: FontOption[];
   colorPalette?: (string | null)[][];
 }
@@ -88,7 +92,9 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   fontOptions = defaultFontOptions,
   colorPalette = defaultPalette,
 }) => {
-  
+
+  const inputName = `ownDrafts[0].images[${groupIndex || 0}]`;
+
   // Create refs to store the latest values to prevent excessive re-renders
   const allVariationsRef = useRef<any[]>([]);
   const productRef = useRef(product);
@@ -113,7 +119,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const [isCanvasLoading, setIsCanvasLoading] = useState(true);
   const [selectedTextObject, setSelectedTextObject] = useState<fabric.IText | null>(null);
 
-  const [updateCounter, setUpdateCounter] = useState(0);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   // Add state for selected object ID
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
@@ -245,7 +250,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         if (canvasRef.current.parentElement) {
           const containers = canvasRef.current.parentElement.querySelectorAll('.canvas-container');
           if (containers.length > 1) {
-            console.log(`Found ${containers.length} canvas containers, cleaning up extras`);
             // Keep only the first container
             for (let i = 1; i < containers.length; i++) {
               containers[i].remove();
@@ -335,7 +339,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       allVariationsRef.current = newAllVariations;
 
       const newDraftTemplates = initDraftTemplates(newAllVariations, productRef.current);
-      console.log('newDraftTemplates', newDraftTemplates);
 
       // Check if the currently selected template ID still exists in the new list
       const currentSelectedIdStillExists = newDraftTemplates.some(
@@ -524,6 +527,7 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
     const updateRenderedDraftPreviews = async () => {
       const templateId = selectedTemplate;
       const renderedImage = await renderClippedImage(fabricCanvasInstance, {format: 'png'});
+      const fullCanvasImage = await renderCanvasWithoutGrid(fabricCanvasInstance, {format: 'png'});
 
       if (renderedImage && templateId) {
         const previews = [...renderedDraftPreviews];
@@ -531,13 +535,28 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
         if (existingPreviewIndex !== -1) {
           // Update existing preview
-          previews[existingPreviewIndex] = { templateId, image: renderedImage };
+          previews[existingPreviewIndex] = {
+            templateId,
+            image: renderedImage,
+            canvasPreview: fullCanvasImage || '',
+          };
         } else {
           // Add new preview
-          previews.push({ templateId, image: renderedImage });
+          previews.push({ templateId, image: renderedImage, canvasPreview: fullCanvasImage || '', });
         }
 
+        // Save the rendered draft previews and previews to local storage
+        localStorage.setItem(
+          `productDraftTemplate`,
+          JSON.stringify({
+            productId: product.id,
+            templateData: renderedDraftPreviews,
+            previews: previews,
+          })
+        );
+
         setRenderedDraftPreviews(previews);
+
         setLoadingPreviews(false);
       }
     };
@@ -558,31 +577,29 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       }
     };
 
-
-      // Add unique ID to objects if they don't have one
-      const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
-        canvasInstance.getObjects().forEach(obj => {
-          if (!(obj as any).id) {
-            (obj as any).id = uuidv4();
-            console.log(`Assigned ID ${(obj as any).id} to object`, obj);
-          }
-        });
-      };
-      // Ensure initial objects have IDs
-      if (fabricCanvasInstance) {
-        ensureObjectIds(fabricCanvasInstance);
-      }
-
-      // Attach listeners
-      fabricCanvasInstance?.on('selection:created', handleSelection);
-      fabricCanvasInstance?.on('selection:updated', handleSelection);
-      fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
-      // Also update IDs when new objects are added
-      fabricCanvasInstance?.on('object:added', (e) => {
-        if (e.target && !(e.target as any).id) {
-          (e.target as any).id = uuidv4();
+    // Add unique ID to objects if they don't have one
+    const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
+      canvasInstance.getObjects().forEach(obj => {
+        if (!(obj as any).id) {
+          (obj as any).id = uuidv4();
         }
       });
+    };
+    // Ensure initial objects have IDs
+    if (fabricCanvasInstance) {
+      ensureObjectIds(fabricCanvasInstance);
+    }
+
+    // Attach listeners
+    fabricCanvasInstance?.on('selection:created', handleSelection);
+    fabricCanvasInstance?.on('selection:updated', handleSelection);
+    fabricCanvasInstance?.on('selection:cleared', handleSelectionCleared);
+    // Also update IDs when new objects are added
+    fabricCanvasInstance?.on('object:added', (e) => {
+      if (e.target && !(e.target as any).id) {
+        (e.target as any).id = uuidv4();
+      }
+    });
 
     // setup keyboard events
     const cleanupKeyboardEvents = setupKeyboardEvents(fabricCanvasInstance, () => {
@@ -813,10 +830,13 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
         // Props
         canvasRef,
+        groupIndex,
         height,
+        inputName,
         job,
         product,
         width,
+        hookForm,
       }}
     >
       {children}

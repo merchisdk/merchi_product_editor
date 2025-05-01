@@ -235,6 +235,7 @@ export interface DraftTemplateData {
 export interface RenderedDraftPreview {
   templateId: number;
   image: string;
+  canvasPreview: string;
 }
 
 export interface MappedPreview {

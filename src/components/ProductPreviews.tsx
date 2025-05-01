@@ -13,6 +13,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
     draftTemplates,
     draftPreviews,
     loadingPreviews,
+    product,
     renderedDraftPreviews,
   } = useProductEditor();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +40,6 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
     }
     
     renderCountRef.current++;
-    const currentRenderCount = renderCountRef.current;
     
     const processPreviewsWithLayers = async () => {
       
@@ -186,27 +186,25 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
     setIsModalOpen(false);
   };
 
-  if (!draftPreviews || draftPreviews.length === 0) {
-    return null;
-  }
-  
   // Determine the URL to display for each preview
-  const previewUrlsForDisplay = draftPreviews.map(preview => {
-    // If we have a rendered PNG for this preview, use it
-    const renderedPreview = renderedPreviews.find(rp => rp.draftPreviewId === preview.id);
-    if (renderedPreview) {
-      return renderedPreview.pngDataUrl;
-    }
-    // Otherwise fall back to the original image
-    return preview.file?.viewUrl || '';
-  });
+  const previewUrlsForDisplay = draftPreviews.length > 0
+    ? draftPreviews.map(preview => {
+      // If we have a rendered PNG for this preview, use it
+      const renderedPreview = renderedPreviews.find(rp => rp.draftPreviewId === preview.id);
+      return renderedPreview?.pngDataUrl || '';
+    })
+    : renderedDraftPreviews.map(preview => {
+      // If we have a rendered PNG for this preview, use it
+      return preview.canvasPreview;
+    });
 
+  const previews = draftPreviews?.length > 0 ? draftPreviews : renderedDraftPreviews;
   return (
     <>
       {!isModalOpen && (
         <div className="bottom-preview-section">
           <div className="preview-images">
-            {draftPreviews.map((preview: any, index) => loadingPreviews || isProcessing ? (
+            {previews.map((preview: any, index) => loadingPreviews || isProcessing ? (
               <div key={`loading-${preview.id || index}`} className='preview-image-box'>
                 <div className="preview-image-box-loading-spinner" />
               </div>
