@@ -105,6 +105,7 @@ const ImageZoomModal = ({
         <button
           onClick={onClose}
           className="close-button"
+          type="button"
         >
           <Close width={36} height={36} color="white" />
         </button>
@@ -112,6 +113,7 @@ const ImageZoomModal = ({
         <button
           onClick={handlePrevious}
           className="nav-button-zoom left"
+          type="button"
         >
           <FormPrevious width={42} height={42} color="white" />
         </button>
@@ -139,6 +141,7 @@ const ImageZoomModal = ({
         <button
           onClick={handleNext}
           className="nav-button-zoom right"
+          type="button"
         >
           <FormNext width={42} height={42} color="white" />
         </button>
