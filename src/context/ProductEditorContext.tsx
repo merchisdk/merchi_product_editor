@@ -555,8 +555,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           JSON.stringify({
             groupIndex,
             productId: product.id,
-            templateData: {...previews},
-            previews: {...previews},
+            templateData: [...previews],
+            previews: [...previews],
           })
         );
 
