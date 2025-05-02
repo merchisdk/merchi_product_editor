@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Toolbar from './Toolbar';
 import '../styles/FloatingToolbar.css';
 const FloatingToolbar: React.FC = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 15, y: 15 });
   const [isDragging, setIsDragging] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const offset = useRef({ x: 0, y: 0 });

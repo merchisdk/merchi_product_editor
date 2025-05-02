@@ -1,5 +1,5 @@
 import React from 'react';
-import { Apps, Redo, Undo, View, Trash, Layer } from 'grommet-icons';
+import { Apps, View, Trash, Layer } from 'grommet-icons';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { addTextToCanvas } from '../utils/canvasUtils';
 import '../styles/Toolbar.css';
@@ -76,18 +76,6 @@ export default function Toolbar() {
       >
         <Trash width={24} height={24} />
         <span>Delete</span>
-      </div>
-
-      {/* Redo and Undo buttons */}
-      <div className="toolbar-content">
-        <div className="toolbar-button">
-          <Undo width={24} height={24} />
-          <span>Undo</span>
-        </div>
-        <div className="toolbar-button">
-          <Redo width={24} height={24} />
-          <span>Redo</span>
-        </div>
       </div>
     </>
   );
