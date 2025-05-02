@@ -550,16 +550,15 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         }
 
         // Save the rendered draft previews and previews to local storage
-        localStorage.setItem(
-          `productDraftTemplate`,
-          JSON.stringify({
-            groupIndex,
-            productId: product.id,
-            templateData: [...previews],
-            previews: [...previews],
-          })
-        );
-
+        const productDraftTemplate = localStorage.getItem(`productDraftTemplate-${product.id}`);
+        const storedData = productDraftTemplate ? JSON.parse(productDraftTemplate) : [];
+        storedData[groupIndex] = {
+          groupIndex,
+          productId: product.id,
+          templateData: [...previews],
+          previews: [...previews],
+        }
+        localStorage.setItem(`productDraftTemplate-${product.id}`, JSON.stringify(storedData));
         setRenderedDraftPreviews(previews);
 
         setLoadingPreviews(false);
