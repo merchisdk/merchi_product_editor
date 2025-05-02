@@ -1,16 +1,5 @@
 import { readPsd } from 'ag-psd';
-import { DraftPreview } from '../types';
-
-interface MappedPreview {
-  draftPreview: DraftPreview;
-  draftPreviewLayers: {
-    layerName: string | undefined;
-    renderedLayer: {
-      templateId: number;
-      image: string;
-    } | null;
-  }[];
-}
+import { MappedPreview } from '../types';
 
 /**
  * Find a layer by name within a PSD layer structure
@@ -324,13 +313,13 @@ export async function renderDraftPreviewsWithLayers(
           // Load the rendered image
           try {
             // Validate the rendered layer image URL
-            if (!draftPreviewLayer.renderedLayer.image || 
-                !draftPreviewLayer.renderedLayer.image.startsWith('data:image/')) {
+            if (!draftPreviewLayer.renderedLayer.draft || 
+                !draftPreviewLayer.renderedLayer.draft.startsWith('data:image/')) {
               throw new Error('Invalid image URL format');
             }
             
             // Convert the data URL to a canvas element instead of an image
-            const layerCanvas = await dataUrlToCanvas(draftPreviewLayer.renderedLayer.image);
+            const layerCanvas = await dataUrlToCanvas(draftPreviewLayer.renderedLayer.draft);
             
             // Validate the canvas dimensions
             if (layerCanvas.width <= 0 || layerCanvas.height <= 0) {

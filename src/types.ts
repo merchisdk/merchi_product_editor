@@ -234,8 +234,8 @@ export interface DraftTemplateData {
 
 export interface RenderedDraftPreview {
   templateId: number;
-  image: string;
-  canvasPreview: string;
+  draft: string; // base64 string of the template artwork as a draft
+  canvasPreview: string; // base64 string of the template rendered with the full canvas
 }
 
 export interface MappedPreview {

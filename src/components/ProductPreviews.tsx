@@ -13,7 +13,6 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
     draftTemplates,
     draftPreviews,
     loadingPreviews,
-    product,
     renderedDraftPreviews,
   } = useProductEditor();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,7 +59,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
       let changedTemplateIds = new Set<number>();
       renderedDraftPreviews.forEach(rdp => {
         const templateId = rdp.templateId;
-        const templateVersion = rdp.image; // Use the image data URL as a version identifier
+        const templateVersion = rdp.draft; // Use the image data URL as a version identifier
         const previousVersion = processedTemplateVersionsRef.current.get(templateId);
         
         if (previousVersion !== templateVersion) {
@@ -86,8 +85,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
         
         // Check if this preview uses any templates that have changed
         const shouldProcess = mp.draftPreviewLayers.some(layer => 
-          layer.renderedLayer && changedTemplateIds.has(layer.renderedLayer.templateId)
-        );
+          layer.renderedLayer && changedTemplateIds.has(layer.renderedLayer.templateId));
         
         return shouldProcess;
       });
@@ -164,7 +162,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
             
             // Store initial template versions
             renderedDraftPreviews.forEach(rdp => {
-              processedTemplateVersionsRef.current.set(rdp.templateId, rdp.image);
+              processedTemplateVersionsRef.current.set(rdp.templateId, rdp.draft);
             });
 
           } catch (error) {

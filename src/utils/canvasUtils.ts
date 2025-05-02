@@ -114,7 +114,21 @@ export const renderCanvasWithoutGrid = (
         if (
           (obj as any).id?.includes('grid') || 
           (obj as any).type === 'grid' || 
-          (obj as any).isGridElement
+          (obj as any).isGridElement ||
+          // Add more comprehensive grid detection
+          (obj as any).data?.isGrid ||
+          (obj as any).name?.includes('grid') ||
+          (obj as any).className?.includes('grid') ||
+          // Check for common grid-related properties
+          (obj as any).strokeDashArray || // Dashed lines are often used for grids
+          // Check for line objects with evenly spaced positions (typical grid pattern)
+          ((obj as any).type === 'line' && ((obj as any).x1 === (obj as any).x2 || (obj as any).y1 === (obj as any).y2)) ||
+          // Check for objects tagged with grid-related classes
+          (obj as any).classes?.includes('grid') ||
+          // Check for objects with certain grid styling
+          ((obj as any).stroke && 
+           ((obj as any).strokeWidth === 0.5 || (obj as any).strokeWidth === 1) && 
+           ((obj as any).stroke === '#ddd' || (obj as any).stroke === '#eee' || (obj as any).stroke === 'rgba(0,0,0,0.1)'))
         ) {
           obj.visible = false;
         }

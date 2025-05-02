@@ -528,30 +528,35 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       const templateId = selectedTemplate;
       const renderedImage = await renderClippedImage(fabricCanvasInstance, {format: 'png'});
       const fullCanvasImage = await renderCanvasWithoutGrid(fabricCanvasInstance, {format: 'png'});
+      const activeTemplateIds = draftTemplates.map(dt => dt.template.id);
 
       if (renderedImage && templateId) {
-        const previews = [...renderedDraftPreviews];
+        const previews = [...renderedDraftPreviews.filter(rdp => activeTemplateIds.includes(rdp.templateId))];
         const existingPreviewIndex = previews.findIndex(preview => preview.templateId === templateId);
-
         if (existingPreviewIndex !== -1) {
           // Update existing preview
           previews[existingPreviewIndex] = {
             templateId,
-            image: renderedImage,
+            draft: renderedImage,
             canvasPreview: fullCanvasImage || '',
           };
         } else {
           // Add new preview
-          previews.push({ templateId, image: renderedImage, canvasPreview: fullCanvasImage || '', });
+          previews.push({
+            templateId,
+            draft: renderedImage,
+            canvasPreview: fullCanvasImage || '',
+          });
         }
 
         // Save the rendered draft previews and previews to local storage
         localStorage.setItem(
           `productDraftTemplate`,
           JSON.stringify({
+            groupIndex,
             productId: product.id,
-            templateData: renderedDraftPreviews,
-            previews: previews,
+            templateData: {...previews},
+            previews: {...previews},
           })
         );
 
