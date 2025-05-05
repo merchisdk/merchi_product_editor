@@ -23,7 +23,6 @@ export const loadRegularImagePromise = (
   return new Promise((resolve) => {
     // Check if canvas is still valid when tracking is enabled
     if (trackingEnabled && (fabricCanvas as any).loadingId !== canvasId) {
-      console.warn('Canvas changed before starting image load, aborting');
       resolve();
       return;
     }
@@ -43,21 +42,16 @@ export const loadRegularImagePromise = (
     // If we have a thumbnailUrl or previewUrl, use that instead for unsupported formats
     let urlToUse = imageUrl;
     if (isPossiblyUnsupported) {
-      console.log('Detected possibly unsupported file format, looking for alternatives');
       
       // Try to use alternative URLs if available
       if (template.file?.thumbnailUrl) {
-        console.log('Using thumbnailUrl instead');
         urlToUse = template.file.thumbnailUrl;
       } else if (template.file?.previewUrl) {
-        console.log('Using previewUrl instead');
         urlToUse = template.file.previewUrl;
       } else {
         console.log('No alternative image URL found, attempting to load original');
       }
     }
-    
-    console.log('Loading image from URL:', urlToUse);
 
     // Add error handling for image loading
     fabric.Image.fromURL(
@@ -73,7 +67,6 @@ export const loadRegularImagePromise = (
         if (!img || !img.width || !img.height) {
           console.error('Failed to load image or image has invalid dimensions:', img);
           // Try loading the image with a different approach - create an HTML image first
-          console.log('Attempting alternative loading method...');
           const imgElement = new Image();
           imgElement.crossOrigin = 'anonymous';
           imgElement.onload = () => {
@@ -85,7 +78,6 @@ export const loadRegularImagePromise = (
             }
             
             const fabricImg = new fabric.Image(imgElement);
-            console.log('Alternative loading successful!');
             
             // Continue with the same scaling and positioning logic
             const scale = Math.min(

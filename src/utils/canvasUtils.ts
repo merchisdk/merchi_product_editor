@@ -74,6 +74,129 @@ export const addTextToCanvas = (
 };
 
 /**
+ * Renders the entire canvas as an image without displaying grid elements
+ * 
+ * @param canvas - The Fabric.js canvas instance
+ * @param options - Optional rendering options
+ * @returns A promise that resolves to the dataURL of the canvas without grid
+ */
+export const renderCanvasWithoutGrid = (
+  canvas: fabric.Canvas,
+  options?: {
+    format?: string;
+    quality?: number;
+    multiplier?: number;
+    backgroundColor?: string | null;
+  }
+): Promise<string | null> => {
+  return new Promise((resolve) => {
+    if (!canvas) {
+      console.error('Canvas is null or undefined');
+      resolve(null);
+      return;
+    }
+
+    try {
+      // Get all objects on the canvas
+      const objects = canvas.getObjects();
+      
+      // Store original visibility of each object
+      const originalVisibilities = objects.map(obj => ({ 
+        object: obj, 
+        visible: obj.visible 
+      }));
+      
+      // Hide grid elements - typically grid elements might have a specific ID or class
+      // You may need to adjust this logic based on how grid elements are identified
+      objects.forEach(obj => {
+        // Hide objects that represent grid elements
+        // This assumes grid elements have a property like 'type' or 'id' that identifies them
+        if (
+          (obj as any).id?.includes('grid') || 
+          (obj as any).type === 'grid' || 
+          (obj as any).isGridElement ||
+          // Add more comprehensive grid detection
+          (obj as any).data?.isGrid ||
+          (obj as any).name?.includes('grid') ||
+          (obj as any).className?.includes('grid') ||
+          // Check for common grid-related properties
+          (obj as any).strokeDashArray || // Dashed lines are often used for grids
+          // Check for line objects with evenly spaced positions (typical grid pattern)
+          ((obj as any).type === 'line' && ((obj as any).x1 === (obj as any).x2 || (obj as any).y1 === (obj as any).y2)) ||
+          // Check for objects tagged with grid-related classes
+          (obj as any).classes?.includes('grid') ||
+          // Check for objects with certain grid styling
+          ((obj as any).stroke && 
+           ((obj as any).strokeWidth === 0.5 || (obj as any).strokeWidth === 1) && 
+           ((obj as any).stroke === '#ddd' || (obj as any).stroke === '#eee' || (obj as any).stroke === 'rgba(0,0,0,0.1)'))
+        ) {
+          obj.visible = false;
+        }
+      });
+      
+      // Save the original selection state
+      const originalSelectionBorder = canvas.selectionBorderColor;
+      const originalSelectionColor = canvas.selectionColor;
+      const originalActiveObject = canvas.getActiveObject();
+      
+      // Temporarily disable selection indicators
+      canvas.selectionBorderColor = 'transparent';
+      canvas.selectionColor = 'transparent';
+      canvas.discardActiveObject();
+      
+      // Apply any background color if specified
+      const originalBackgroundColor = canvas.backgroundColor;
+      if (options?.backgroundColor !== undefined) {
+        canvas.backgroundColor = options.backgroundColor || 'transparent';
+      }
+      
+      // Render the canvas
+      canvas.renderAll();
+      
+      // Get rendering options
+      const format = options?.format || 'png';
+      const quality = options?.quality || 1;
+      const multiplier = options?.multiplier || 1;
+      
+      // Create a data URL from the canvas
+      try {
+        const dataUrl = canvas.toDataURL({
+          format: format,
+          quality: quality,
+          multiplier: multiplier
+        });
+        
+        // Restore the original state
+        objects.forEach((obj, index) => {
+          obj.visible = originalVisibilities[index].visible;
+        });
+        
+        // Restore selection state
+        canvas.selectionBorderColor = originalSelectionBorder;
+        canvas.selectionColor = originalSelectionColor;
+        if (originalActiveObject) {
+          canvas.setActiveObject(originalActiveObject);
+        }
+        
+        // Restore background color
+        canvas.backgroundColor = originalBackgroundColor;
+        
+        // Render with original state
+        canvas.renderAll();
+        
+        resolve(dataUrl);
+      } catch (error) {
+        console.error('Error generating data URL:', error);
+        resolve(null);
+      }
+    } catch (error) {
+      console.error('Error rendering canvas without grid:', error);
+      resolve(null);
+    }
+  });
+};
+
+/**
  * Renders an image containing only what's visible inside a clipPath on the canvas
  * 
  * @param canvas - The Fabric.js canvas instance

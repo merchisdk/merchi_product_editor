@@ -12,11 +12,14 @@ const ProductEditor: React.FC = () => {
   const {
     canvasRef,
     draftTemplates,
+    groupIndex,
     handleTemplateChange,
     isMobileView,
     selectedTemplate,
     showPreview,
+    inputName,
     isCanvasLoading,
+    hookForm,
     selectedTextObject,
     showLayerPanel,
   } = useProductEditor();
@@ -30,9 +33,16 @@ const ProductEditor: React.FC = () => {
     e.stopPropagation();
   };
 
+  const register = hookForm?.register;
   return (
     <div className="product-editor">
       {/* Template buttons */}
+      {register && (
+        <input
+          {...register(inputName)}
+          type='hidden'
+        />
+      )}
       {draftTemplates.length > 0 && (
         <div className="template-buttons">
           {draftTemplates.map(({ template }) => (
@@ -61,9 +71,7 @@ const ProductEditor: React.FC = () => {
           {showLayerPanel && <LayerPanel />}
         </div>
 
-        {showPreview && (
-          <ProductPreviews />
-        )}
+        <ProductPreviews />
       </div>
 
       {isMobileView && (
