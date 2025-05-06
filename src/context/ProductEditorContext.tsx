@@ -8,11 +8,13 @@ import { setupKeyboardEvents } from '../utils/keyboard';
 import { haveDraftTemplatesChanged } from '../utils/draftTemplateUtils';
 import { setNewDraftPreviews } from '../utils/previewUtils';
 import { debounce } from 'lodash';
-import { renderClippedImage } from '../utils/canvasUtils';
+import { renderClippedImage, renderCanvasWithoutGrid } from '../utils/canvasUtils';
 import { FontOption, defaultFontOptions } from '../config/fontConfig';
 import { defaultPalette } from '../config/colorConfig';
 import { v4 as uuidv4 } from 'uuid';
+import { UseFormReturn } from 'react-hook-form';
 import { getDeviceAdjustedDimensions } from '../utils/deviceUtils';
+
 
 interface ProductEditorContextType {
   // States
@@ -54,10 +56,13 @@ interface ProductEditorContextType {
 
   // Props
   canvasRef: React.RefObject<HTMLCanvasElement>;
+  groupIndex: number;
   height: number;
+  inputName: string;
   job: Job;
   product: Product;
   width: number;
+  hookForm: UseFormReturn<any> | null;
 }
 
 const ProductEditorContext = createContext<ProductEditorContextType | undefined>(undefined);
@@ -71,7 +76,7 @@ interface ProductEditorProviderProps {
   job: Job;
   onSave: () => void;
   onCancel: () => void;
-  hookForm?: any; // Add the form methods prop
+  hookForm?: UseFormReturn<any> | null; // Type the form methods prop
   fontOptions?: FontOption[];
   colorPalette?: (string | null)[][];
 }
@@ -89,6 +94,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   fontOptions = defaultFontOptions,
   colorPalette = defaultPalette,
 }) => {
+
+  const inputName = `ownDrafts[0].images[${groupIndex || 0}]`;
 
   // Create refs to store the latest values to prevent excessive re-renders
   const allVariationsRef = useRef<any[]>([]);
@@ -254,7 +261,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         if (canvasRef.current.parentElement) {
           const containers = canvasRef.current.parentElement.querySelectorAll('.canvas-container');
           if (containers.length > 1) {
-            console.log(`Found ${containers.length} canvas containers, cleaning up extras`);
             // Keep only the first container
             for (let i = 1; i < containers.length; i++) {
               containers[i].remove();
@@ -347,7 +353,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       allVariationsRef.current = newAllVariations;
 
       const newDraftTemplates = initDraftTemplates(newAllVariations, productRef.current);
-      console.log('newDraftTemplates', newDraftTemplates);
 
       // Check if the currently selected template ID still exists in the new list
       const currentSelectedIdStillExists = newDraftTemplates.some(
@@ -539,21 +544,41 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     const updateRenderedDraftPreviews = async () => {
       const templateId = selectedTemplate;
-      const renderedImage = await renderClippedImage(fabricCanvasInstance, { format: 'png' });
+      const renderedImage = await renderClippedImage(fabricCanvasInstance, {format: 'png'});
+      const fullCanvasImage = await renderCanvasWithoutGrid(fabricCanvasInstance, {format: 'png'});
+      const activeTemplateIds = draftTemplates.map(dt => dt.template.id);
 
       if (renderedImage && templateId) {
-        const previews = [...renderedDraftPreviews];
+        const previews = [...renderedDraftPreviews.filter(rdp => activeTemplateIds.includes(rdp.templateId))];
         const existingPreviewIndex = previews.findIndex(preview => preview.templateId === templateId);
-
         if (existingPreviewIndex !== -1) {
           // Update existing preview
-          previews[existingPreviewIndex] = { templateId, image: renderedImage };
+          previews[existingPreviewIndex] = {
+            templateId,
+            draft: renderedImage,
+            canvasPreview: fullCanvasImage || '',
+          };
         } else {
           // Add new preview
-          previews.push({ templateId, image: renderedImage });
+          previews.push({
+            templateId,
+            draft: renderedImage,
+            canvasPreview: fullCanvasImage || '',
+          });
         }
 
+        // Save the rendered draft previews and previews to local storage
+        const productDraftTemplate = localStorage.getItem(`productDraftTemplate-${product.id}`);
+        const storedData = productDraftTemplate ? JSON.parse(productDraftTemplate) : [];
+        storedData[groupIndex] = {
+          groupIndex,
+          productId: product.id,
+          templateData: [...previews],
+          previews: [...previews],
+        }
+        localStorage.setItem(`productDraftTemplate-${product.id}`, JSON.stringify(storedData));
         setRenderedDraftPreviews(previews);
+
         setLoadingPreviews(false);
       }
     };
@@ -574,13 +599,11 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
       }
     };
 
-
     // Add unique ID to objects if they don't have one
     const ensureObjectIds = (canvasInstance: fabric.Canvas) => {
       canvasInstance.getObjects().forEach(obj => {
         if (!(obj as any).id) {
           (obj as any).id = uuidv4();
-          console.log(`Assigned ID ${(obj as any).id} to object`, obj);
         }
       });
     };
@@ -809,10 +832,13 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
         // Props
         canvasRef,
+        groupIndex,
         height: canvasHeight,
+        inputName,
         job,
         product,
         width: canvasWidth,
+        hookForm,
       }}
     >
       {children}

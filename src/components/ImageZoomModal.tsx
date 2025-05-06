@@ -110,13 +110,15 @@ const ImageZoomModal = ({
           <Close width={36} height={36} color="white" />
         </button>
 
-        <button
-          onClick={handlePrevious}
-          className="nav-button-zoom left"
-          type="button"
-        >
-          <FormPrevious width={42} height={42} color="white" />
-        </button>
+        {totalImages > 1 && (
+          <button
+            onClick={handlePrevious}
+            className="nav-button-zoom left"
+            type="button"
+          >
+            <FormPrevious width={42} height={42} color="white" />
+          </button>
+        )}
 
         <div
           className="zoom-image-container"
@@ -138,13 +140,15 @@ const ImageZoomModal = ({
           </AnimatePresence>
         </div>
 
-        <button
-          onClick={handleNext}
-          className="nav-button-zoom right"
-          type="button"
-        >
-          <FormNext width={42} height={42} color="white" />
-        </button>
+        {totalImages > 1 && (
+          <button
+            onClick={handleNext}
+            className="nav-button-zoom right"
+            type="button"
+          >
+            <FormNext width={42} height={42} color="white" />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -9,7 +9,7 @@
     variations: any[],
     savedObjects: SavedCanvasObject[],
     width: number,
-    height: number
+    height: number,
   ): Promise<void> => {
     // Check if we have a valid image URL
     if (!template.file?.viewUrl) {

@@ -39,7 +39,6 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
     }
     
     renderCountRef.current++;
-    const currentRenderCount = renderCountRef.current;
     
     const processPreviewsWithLayers = async () => {
       
@@ -60,7 +59,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
       let changedTemplateIds = new Set<number>();
       renderedDraftPreviews.forEach(rdp => {
         const templateId = rdp.templateId;
-        const templateVersion = rdp.image; // Use the image data URL as a version identifier
+        const templateVersion = rdp.draft; // Use the image data URL as a version identifier
         const previousVersion = processedTemplateVersionsRef.current.get(templateId);
         
         if (previousVersion !== templateVersion) {
@@ -86,8 +85,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
         
         // Check if this preview uses any templates that have changed
         const shouldProcess = mp.draftPreviewLayers.some(layer => 
-          layer.renderedLayer && changedTemplateIds.has(layer.renderedLayer.templateId)
-        );
+          layer.renderedLayer && changedTemplateIds.has(layer.renderedLayer.templateId));
         
         return shouldProcess;
       });
@@ -164,7 +162,7 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
             
             // Store initial template versions
             renderedDraftPreviews.forEach(rdp => {
-              processedTemplateVersionsRef.current.set(rdp.templateId, rdp.image);
+              processedTemplateVersionsRef.current.set(rdp.templateId, rdp.draft);
             });
 
           } catch (error) {
@@ -186,27 +184,25 @@ const ProductPreviews: React.FC<BottomPreviewDisplayProps> = () => {
     setIsModalOpen(false);
   };
 
-  if (!draftPreviews || draftPreviews.length === 0) {
-    return null;
-  }
-  
   // Determine the URL to display for each preview
-  const previewUrlsForDisplay = draftPreviews.map(preview => {
-    // If we have a rendered PNG for this preview, use it
-    const renderedPreview = renderedPreviews.find(rp => rp.draftPreviewId === preview.id);
-    if (renderedPreview) {
-      return renderedPreview.pngDataUrl;
-    }
-    // Otherwise fall back to the original image
-    return preview.file?.viewUrl || '';
-  });
+  const previewUrlsForDisplay = draftPreviews.length > 0
+    ? draftPreviews.map(preview => {
+      // If we have a rendered PNG for this preview, use it
+      const renderedPreview = renderedPreviews.find(rp => rp.draftPreviewId === preview.id);
+      return renderedPreview?.pngDataUrl || '';
+    })
+    : renderedDraftPreviews.map(preview => {
+      // If we have a rendered PNG for this preview, use it
+      return preview.canvasPreview;
+    });
 
+  const previews = draftPreviews?.length > 0 ? draftPreviews : renderedDraftPreviews;
   return (
     <>
       {!isModalOpen && (
         <div className="bottom-preview-section">
           <div className="preview-images">
-            {draftPreviews.map((preview: any, index) => loadingPreviews || isProcessing ? (
+            {previews.map((preview: any, index) => loadingPreviews || isProcessing ? (
               <div key={`loading-${preview.id || index}`} className='preview-image-box'>
                 <div className="preview-image-box-loading-spinner" />
               </div>
