@@ -55,7 +55,7 @@ const ProductEditor: React.FC = () => {
           type='hidden'
         />
       )}
-      {draftTemplates.length > 0 && (
+      {!isCanvasLoading && draftTemplates.length > 0 && (
         <div className="template-buttons">
           {draftTemplates.map(({ template }) => (
             <div

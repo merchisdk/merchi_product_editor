@@ -16,7 +16,8 @@ export default function Toolbar() {
     showLayerPanel,
     toggleLayerPanel,
     deleteObject,
-    selectedObjectId
+    selectedObjectId,
+    renderedDraftPreviews
   } = useProductEditor();
 
   // Add handleAddText function before the return statement
@@ -36,6 +37,9 @@ export default function Toolbar() {
     }
   };
 
+  // Check if previews are available
+  const hasPreview = renderedDraftPreviews && renderedDraftPreviews.length > 0;
+
   return (
     <>
       {/* Grid toggle button */}
@@ -52,11 +56,11 @@ export default function Toolbar() {
       {/* Preview toggle button */}
       <div className="preview-toggle">
         <div
-          className={`toolbar-button ${showPreview ? 'active' : ''}`}
-          onClick={togglePreview}
+          className={`toolbar-button ${showPreview && hasPreview ? 'active' : ''} ${!hasPreview ? 'disabled' : ''}`}
+          onClick={hasPreview ? togglePreview : undefined}
         >
           <View width={24} height={24} />
-          <span>{showPreview ? 'Hide Preview' : 'Show Preview'}</span>
+          <span>{hasPreview && showPreview ? 'Hide Preview' : 'Show Preview'}</span>
         </div>
       </div>
 

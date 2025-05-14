@@ -115,4 +115,11 @@
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+  background-color: transparent !important;
+  color: #8F8E8E !important;
+}
+
+.toolbar-button.disabled svg {
+  stroke: #8F8E8E !important;
+  fill: none !important;
 }
