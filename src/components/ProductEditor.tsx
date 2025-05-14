@@ -22,6 +22,7 @@ const ProductEditor: React.FC = () => {
     hookForm,
     selectedTextObject,
     showLayerPanel,
+    renderedDraftPreviews,
   } = useProductEditor();
 
   const disableCanvasEvents = (e: React.MouseEvent) => {
@@ -31,6 +32,17 @@ const ProductEditor: React.FC = () => {
       return;
     }
     e.stopPropagation();
+  };
+
+  const getTemplatePreviewImage = (templateId?: number) => {
+    if (!templateId) return null;
+
+    const renderedPreview = renderedDraftPreviews?.find(preview => preview.templateId === templateId);
+    if (renderedPreview?.canvasPreview) {
+      return renderedPreview.canvasPreview;
+    }
+
+    return null;
   };
 
   const register = hookForm?.register;
@@ -51,6 +63,13 @@ const ProductEditor: React.FC = () => {
               className={`template-button ${selectedTemplate === template.id ? 'selected' : ''}`}
               onClick={() => handleTemplateChange(template)}
             >
+              {(getTemplatePreviewImage(template.id) || (template.file && template.file.viewUrl)) && (
+                <img
+                  src={getTemplatePreviewImage(template.id) || (template.file?.viewUrl || '')}
+                  alt={template.name || `Template ${template.id}`}
+                  className="template-thumbnail"
+                />
+              )}
               <span className="template-name">
                 {template.name || `Template ${template.id}`}
               </span>
@@ -71,7 +90,7 @@ const ProductEditor: React.FC = () => {
           {showLayerPanel && <LayerPanel />}
         </div>
 
-        <ProductPreviews />
+        {showPreview && <ProductPreviews />}
       </div>
 
       {isMobileView && !isCanvasLoading && (
