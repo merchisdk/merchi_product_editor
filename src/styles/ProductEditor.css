@@ -150,41 +150,41 @@ body.has-preview-modal-open .mobile-bottom-toolbar {
   .template-buttons {
     transform: none;
     margin-left: 0;
-    margin-right: auto;
+    margin-right: 0;
     max-width: none;
-    padding: 0 0 0 0.5rem;
-    height: 50px;
-    justify-content: flex-start;
+    padding: 0;
+    height: 42px;
+    justify-content: center;
+    width: 100%;
   }
 
   .template-button {
     width: auto;
-    padding: 0.5rem 0.8rem;
-    font-size: 13px;
-    flex-grow: 1;
-    min-width: 90px;
-    height: 44px;
+    padding: 0.4rem 0.6rem;
+    font-size: 14px;
+    flex-grow: 0;
+    min-width: 80px;
+    max-width: 120px;
+    height: 36px;
     justify-content: center;
     transition: all 0.15s cubic-bezier(0.4, 0.0, 0.2, 1);
   }
 
   .template-button.selected {
-    height: 50px;
+    height: 42px;
     padding-top: 0;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    min-width: 110px;
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+    min-width: 90px;
+    max-width: 140px;
   }
 
   .template-thumbnail {
-    height: 28px;
-    width: 28px;
-    margin-right: 5px;
-    flex-shrink: 0;
+    display: none;
   }
 
   .template-name {
-    font-size: 13px;
+    font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

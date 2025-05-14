@@ -63,7 +63,7 @@ const ProductEditor: React.FC = () => {
               className={`template-button ${selectedTemplate === template.id ? 'selected' : ''}`}
               onClick={() => handleTemplateChange(template)}
             >
-              {(getTemplatePreviewImage(template.id) || (template.file && template.file.viewUrl)) && (
+              {!isMobileView && (getTemplatePreviewImage(template.id) || (template.file && template.file.viewUrl)) && (
                 <img
                   src={getTemplatePreviewImage(template.id) || (template.file?.viewUrl || '')}
                   alt={template.name || `Template ${template.id}`}
