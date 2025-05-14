@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Close, FormPrevious, FormNext } from "grommet-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeNavigate } from "../hooks/useSwipeNavigate";
@@ -32,14 +33,17 @@ const ImageZoomModal = ({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       document.body.classList.add(MODAL_BODY_CLASS);
+      document.documentElement.classList.add(MODAL_BODY_CLASS);
     } else {
       document.body.style.overflow = '';
       document.body.classList.remove(MODAL_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_BODY_CLASS);
     }
 
     return () => {
       document.body.style.overflow = '';
       document.body.classList.remove(MODAL_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_BODY_CLASS);
     };
   }, [isOpen]);
 
@@ -99,7 +103,8 @@ const ImageZoomModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  // Render the modal directly at the document body level
+  return createPortal(
     <div className="zoom-modal">
       <div className="zoom-modal-container">
         <button
@@ -150,7 +155,8 @@ const ImageZoomModal = ({
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

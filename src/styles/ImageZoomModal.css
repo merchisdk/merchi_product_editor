@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.75);
-  z-index: 50;
+  z-index: 999999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,7 +23,7 @@
   top: 1rem;
   right: 1rem;
   color: white;
-  z-index: 50;
+  z-index: 999999;
   font-size: 1.5rem;
   cursor: pointer;
 }
@@ -35,7 +35,7 @@
 .nav-button-zoom {
   position: absolute;
   color: white;
-  z-index: 50;
+  z-index: 999999;
   font-size: 2rem;
   width: 48px;
   height: 48px;
@@ -81,6 +81,7 @@
   width: 90vw;
   height: 90vh;
   overflow: hidden;
+  z-index: 999999;
 }
 
 .zoom-image {
@@ -91,4 +92,10 @@
   height: 100%;
   object-fit: contain;
   transform: translateZ(0);
+  z-index: 999999;
+}
+
+/* Ensure modal is above everything when open */
+body.has-preview-modal-open {
+  overflow: hidden;
 }
