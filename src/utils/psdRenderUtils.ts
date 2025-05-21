@@ -323,8 +323,11 @@ export async function renderDraftPreviewsWithLayers(
 
             // Validate the canvas dimensions
             if (layerCanvas.width <= 0 || layerCanvas.height <= 0) {
-              console.error('Canvas has invalid dimensions');
-              throw new Error('Invalid canvas dimensions');
+              console.warn('Canvas size invalid, retrying...');
+              await new Promise(res => setTimeout(res, 200));
+              if (layerCanvas.width <= 0 || layerCanvas.height <= 0) {
+                throw new Error('Still invalid canvas dimensions after wait');
+              }
             }
 
             // Use the position and dimensions of the original PSD layer
