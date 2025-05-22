@@ -544,8 +544,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     const updateRenderedDraftPreviews = async () => {
       const templateId = selectedTemplate;
-      const renderedImage = await renderClippedImage(fabricCanvasInstance, {format: 'png'});
-      const fullCanvasImage = await renderCanvasWithoutGrid(fabricCanvasInstance, {format: 'png'});
+      const renderedImage = await renderClippedImage(fabricCanvasInstance, { format: 'png' });
+      const fullCanvasImage = await renderCanvasWithoutGrid(fabricCanvasInstance, { format: 'png' });
       const activeTemplateIds = draftTemplates.map(dt => dt.template.id);
 
       if (renderedImage && templateId) {

@@ -99,21 +99,21 @@ export const renderCanvasWithoutGrid = (
     try {
       // Get all objects on the canvas
       const objects = canvas.getObjects();
-      
+
       // Store original visibility of each object
-      const originalVisibilities = objects.map(obj => ({ 
-        object: obj, 
-        visible: obj.visible 
+      const originalVisibilities = objects.map(obj => ({
+        object: obj,
+        visible: obj.visible
       }));
-      
+
       // Hide grid elements - typically grid elements might have a specific ID or class
       // You may need to adjust this logic based on how grid elements are identified
       objects.forEach(obj => {
         // Hide objects that represent grid elements
         // This assumes grid elements have a property like 'type' or 'id' that identifies them
         if (
-          (obj as any).id?.includes('grid') || 
-          (obj as any).type === 'grid' || 
+          (obj as any).id?.includes('grid') ||
+          (obj as any).type === 'grid' ||
           (obj as any).isGridElement ||
           // Add more comprehensive grid detection
           (obj as any).data?.isGrid ||
@@ -126,38 +126,38 @@ export const renderCanvasWithoutGrid = (
           // Check for objects tagged with grid-related classes
           (obj as any).classes?.includes('grid') ||
           // Check for objects with certain grid styling
-          ((obj as any).stroke && 
-           ((obj as any).strokeWidth === 0.5 || (obj as any).strokeWidth === 1) && 
-           ((obj as any).stroke === '#ddd' || (obj as any).stroke === '#eee' || (obj as any).stroke === 'rgba(0,0,0,0.1)'))
+          ((obj as any).stroke &&
+            ((obj as any).strokeWidth === 0.5 || (obj as any).strokeWidth === 1) &&
+            ((obj as any).stroke === '#ddd' || (obj as any).stroke === '#eee' || (obj as any).stroke === 'rgba(0,0,0,0.1)'))
         ) {
           obj.visible = false;
         }
       });
-      
+
       // Save the original selection state
       const originalSelectionBorder = canvas.selectionBorderColor;
       const originalSelectionColor = canvas.selectionColor;
       const originalActiveObject = canvas.getActiveObject();
-      
+
       // Temporarily disable selection indicators
       canvas.selectionBorderColor = 'transparent';
       canvas.selectionColor = 'transparent';
       canvas.discardActiveObject();
-      
+
       // Apply any background color if specified
       const originalBackgroundColor = canvas.backgroundColor;
       if (options?.backgroundColor !== undefined) {
         canvas.backgroundColor = options.backgroundColor || 'transparent';
       }
-      
+
       // Render the canvas
       canvas.renderAll();
-      
+
       // Get rendering options
       const format = options?.format || 'png';
       const quality = options?.quality || 1;
       const multiplier = options?.multiplier || 1;
-      
+
       // Create a data URL from the canvas
       try {
         const dataUrl = canvas.toDataURL({
@@ -165,25 +165,25 @@ export const renderCanvasWithoutGrid = (
           quality: quality,
           multiplier: multiplier
         });
-        
+
         // Restore the original state
         objects.forEach((obj, index) => {
           obj.visible = originalVisibilities[index].visible;
         });
-        
+
         // Restore selection state
         canvas.selectionBorderColor = originalSelectionBorder;
         canvas.selectionColor = originalSelectionColor;
         if (originalActiveObject) {
           canvas.setActiveObject(originalActiveObject);
         }
-        
+
         // Restore background color
         canvas.backgroundColor = originalBackgroundColor;
-        
+
         // Render with original state
         canvas.renderAll();
-        
+
         resolve(dataUrl);
       } catch (error) {
         console.error('Error generating data URL:', error);
@@ -234,14 +234,14 @@ export const renderClippedImage = (
 
       // Get bounds of the object with clipPath
       const objBounds = targetObject.getBoundingRect();
-      
+
       // Create a new canvas element
       const tempCanvasEl = document.createElement('canvas');
       tempCanvasEl.width = objBounds.width;
       tempCanvasEl.height = objBounds.height;
       // Explicitly set alpha to true to support transparency
       const tempCtx = tempCanvasEl.getContext('2d', { alpha: true });
-      
+
       if (!tempCtx) {
         console.error('Could not get canvas context');
         resolve(null);
@@ -250,7 +250,7 @@ export const renderClippedImage = (
 
       // Clear the canvas to ensure transparency
       tempCtx.clearRect(0, 0, tempCanvasEl.width, tempCanvasEl.height);
-      
+
       // Set background color if provided, otherwise keep transparent
       if (options?.backgroundColor) {
         tempCtx.fillStyle = options.backgroundColor;
@@ -260,17 +260,26 @@ export const renderClippedImage = (
       // Save current canvas state
       const originalZoom = canvas.getZoom();
       const originalViewportTransform = canvas.viewportTransform ? [...canvas.viewportTransform] : [1, 0, 0, 1, 0, 0];
-      
+
       // Save the original background color of the canvas
       const originalBackgroundColor = canvas.backgroundColor;
-      
+
       // Temporarily set canvas background to transparent
       canvas.backgroundColor = 'transparent';
+
+      // Store original object positions
+      const originalPositions = objects.map(obj => ({
+        object: obj,
+        left: obj.left,
+        top: obj.top,
+        scaleX: obj.scaleX,
+        scaleY: obj.scaleY
+      }));
 
       // Temporarily modify the canvas view to focus on our object
       canvas.setZoom(1);
       canvas.setViewportTransform([1, 0, 0, 1, -objBounds.left, -objBounds.top]);
-      
+
       // Temporarily hide all objects except our target and its clipped content
       const originalVisibilities = objects.map(obj => ({ object: obj, visible: obj.visible }));
       objects.forEach(obj => {
@@ -307,14 +316,23 @@ export const renderClippedImage = (
 
       // Render just the isolated object
       canvas.renderAll();
-      
+
       // Draw the current canvas view to our temp canvas
       tempCtx.drawImage(
-        canvas.getElement(), 
+        canvas.getElement(),
         0, 0, objBounds.width, objBounds.height,
         0, 0, objBounds.width, objBounds.height
       );
-      
+
+      // Restore the original object positions
+      originalPositions.forEach(item => {
+        item.object.left = item.left;
+        item.object.top = item.top;
+        item.object.scaleX = item.scaleX;
+        item.object.scaleY = item.scaleY;
+        item.object.setCoords();
+      });
+
       // Restore the original canvas state
       canvas.setZoom(originalZoom);
       canvas.setViewportTransform(originalViewportTransform);
@@ -337,7 +355,7 @@ export const renderClippedImage = (
       canvas.selectionBorderColor = originalSelectionBorder;
       canvas.selectionColor = originalSelectionColor;
       canvas.renderAll();
-      
+
       // Get the data URL from the temp canvas
       const format = options?.format || 'png';
       const quality = options?.quality || 1;
@@ -356,7 +374,7 @@ export const renderClippedImage = (
 
       // Clear the final canvas to ensure transparency
       finalCtx.clearRect(0, 0, finalCanvas.width, finalCanvas.height);
-      
+
       // Draw the temp canvas content to the final canvas
       finalCtx.drawImage(tempCanvasEl, 0, 0);
 
@@ -369,7 +387,7 @@ export const renderClippedImage = (
         console.error('Error getting data URL:', error);
         resolve(null);
       }
-      
+
     } catch (error) {
       console.error('Error rendering clipped image:', error);
       resolve(null);
