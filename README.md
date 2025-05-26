@@ -7,7 +7,7 @@ A React-based product editor component that allows users to edit product templat
 - **Multiple Template Support**: Select and switch between different draft templates
 - **Variation Management**: Update canvas objects based on product variations
 - **Responsive Design**: Works on both desktop and mobile devices
-- **Canvas Customization**: Grid toggle, image upload, undo/redo capabilities
+- **Canvas Customization**: Grid toggle, image upload
 - **Context-based Architecture**: Uses React Context API for state management
 - **Type-safe**: Written in TypeScript with proper type definitions
 

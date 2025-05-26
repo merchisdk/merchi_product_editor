@@ -149,7 +149,6 @@ export const extractPsdBaseLayer = async (psdUrl: string): Promise<{ dataUrl: st
           } else if (layer.imageData &&
             typeof layer.left === 'number' &&
             typeof layer.top === 'number') {
-            console.log('Using imageData instead of canvas');
 
             // Create a temporary canvas for this layer
             const layerCanvas = document.createElement('canvas');

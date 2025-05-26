@@ -48,7 +48,6 @@ const ProductEditor: React.FC = () => {
   const register = hookForm?.register;
   return (
     <div className="product-editor">
-      {/* Template buttons */}
       {register && (
         <input
           {...register(inputName)}

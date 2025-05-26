@@ -38,10 +38,8 @@ interface ProductEditorContextType {
 
   // Functions
   handleCancel: () => void;
-  handleRedo: () => void;
   handleSave: () => void;
   handleTemplateChange: (draftTemplate: DraftTemplate) => void;
-  handleUndo: () => void;
   recordVariationFieldObjectsOnCanvas: () => void;
   togglePreview: () => void;
   updateSelectedText: (props: Partial<fabric.IText>) => void;
@@ -224,8 +222,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
   const handleSave = () => {
     if (canvas) {
       const dataUrl = canvas.toDataURL();
-      // Here you would typically send the dataUrl to your backend
-      console.log('Saving canvas:', dataUrl);
       onSave();
     }
   };
@@ -239,7 +235,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     // Check if this is already the selected template - prevent reloading the same template
     if (draftTemplate.id && selectedTemplate === draftTemplate.id) {
-      console.log('Template already selected, skipping reload:', draftTemplate.id);
       return;
     }
 
@@ -278,9 +273,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
         // not to bring the selected object to the top visually
         preserveObjectStacking: true
       });
-
-      // Log dimensions for template change
-      console.log('Template change: Creating canvas with dimensions:', { width: canvasWidth, height: canvasHeight });
 
       // Now load the template image and add variations
       const templateData = draftTemplates.find(dt => dt.template.id === draftTemplate.id);
@@ -392,9 +384,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
           backgroundColor: '#ffffff',
           preserveObjectStacking: true
         });
-
-        // Log dimensions for debugging
-        console.log('Initializing canvas with dimensions:', { width: canvasWidth, height: canvasHeight });
 
         // Update state immediately to ensure it's available for event handlers
         setCanvas(fabricCanvasInstance);
@@ -648,7 +637,6 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
     // Return cleanup function
     return () => {
-      console.log("Cleaning up event handlers");
       fabricCanvasInstance.off('selection:created', handleSelection);
       fabricCanvasInstance.off('selection:updated', handleSelection);
       fabricCanvasInstance.off('selection:cleared', handleSelectionCleared);
@@ -802,22 +790,8 @@ export const ProductEditorProvider: React.FC<ProductEditorProviderProps> = ({
 
         // Functions
         handleCancel: () => onCancel(),
-        handleRedo: () => {
-          // if (canvas) {
-          //   canvas.redo();
-          // }
-          // History functionality disabled
-          console.log('Redo functionality is disabled');
-        },
         handleSave,
         handleTemplateChange,
-        handleUndo: () => {
-          // if (canvas) {
-          //   canvas.undo();
-          // }
-          // History functionality disabled
-          console.log('Undo functionality is disabled');
-        },
         recordVariationFieldObjectsOnCanvas,
         togglePreview,
         updateSelectedText,

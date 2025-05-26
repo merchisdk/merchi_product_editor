@@ -82,10 +82,9 @@ export const saveGridState = (fabricCanvas: fabric.Canvas) => {
     console.warn('saveGridState: fabricCanvas is null or undefined');
     return [];
   }
-  
+
   try {
     const objs = fabricCanvas.getObjects().filter(obj => obj);
-    console.log(objs, 'what is this')
     return objs;
   } catch (e) {
     console.warn('saveGridState: Error getting grid objects:', e);
@@ -103,7 +102,7 @@ export const bringGridToFront = (fabricCanvas: fabric.Canvas, gridLines: fabric.
     console.warn('bringGridToFront: fabricCanvas is null or undefined');
     return;
   }
-  
+
   if (gridLines && gridLines.length > 0) {
     try {
       gridLines.forEach(line => fabricCanvas.bringToFront(line));
@@ -123,7 +122,7 @@ export const sendGridToBack = (fabricCanvas: fabric.Canvas, gridLines: fabric.Ob
     console.warn('sendGridToBack: fabricCanvas is null or undefined');
     return;
   }
-  
+
   if (gridLines && gridLines.length > 0) {
     try {
       gridLines.forEach(line => fabricCanvas.sendToBack(line));
@@ -142,7 +141,7 @@ export const clearCanvasExceptGrid = (fabricCanvas: fabric.Canvas) => {
     console.warn('clearCanvasExceptGrid: fabricCanvas is null or undefined');
     return;
   }
-  
+
   try {
     fabricCanvas.getObjects().forEach(obj => {
       if (!obj.data?.isGrid) {
