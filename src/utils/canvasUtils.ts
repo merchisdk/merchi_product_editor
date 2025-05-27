@@ -236,11 +236,19 @@ export const renderClippedImage = (
       const objBounds = targetObject.getBoundingRect();
 
       // Create a new canvas element
+      const dpr = window.devicePixelRatio || 1;
+
       const tempCanvasEl = document.createElement('canvas');
-      tempCanvasEl.width = objBounds.width;
-      tempCanvasEl.height = objBounds.height;
+      tempCanvasEl.width = objBounds.width * dpr;
+      tempCanvasEl.height = objBounds.height * dpr;
+
+      tempCanvasEl.style.width = `${objBounds.width}px`;
+      tempCanvasEl.style.height = `${objBounds.height}px`;
+
+
       // Explicitly set alpha to true to support transparency
       const tempCtx = tempCanvasEl.getContext('2d', { alpha: true });
+      tempCtx && tempCtx.scale(dpr, dpr);
 
       if (!tempCtx) {
         console.error('Could not get canvas context');
@@ -320,9 +328,12 @@ export const renderClippedImage = (
       // Draw the current canvas view to our temp canvas
       tempCtx.drawImage(
         canvas.getElement(),
-        0, 0, objBounds.width, objBounds.height,
+        0, 0, objBounds.width * dpr, objBounds.height * dpr,
         0, 0, objBounds.width, objBounds.height
       );
+
+      console.log('dpr', dpr);
+      console.log('srcW', objBounds.width * dpr, 'destW', objBounds.width);
 
       // Restore the original object positions
       originalPositions.forEach(item => {
@@ -365,6 +376,8 @@ export const renderClippedImage = (
       finalCanvas.width = tempCanvasEl.width;
       finalCanvas.height = tempCanvasEl.height;
       const finalCtx = finalCanvas.getContext('2d', { alpha: true });
+
+      finalCtx && finalCtx.scale(1, 1);
 
       if (!finalCtx) {
         console.error('Could not get final canvas context');

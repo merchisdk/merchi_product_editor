@@ -323,11 +323,8 @@ export async function renderDraftPreviewsWithLayers(
 
             // Validate the canvas dimensions
             if (layerCanvas.width <= 0 || layerCanvas.height <= 0) {
-              console.warn('Canvas size invalid, retrying...');
-              await new Promise(res => setTimeout(res, 200));
-              if (layerCanvas.width <= 0 || layerCanvas.height <= 0) {
-                throw new Error('Still invalid canvas dimensions after wait');
-              }
+              console.error('Canvas has invalid dimensions');
+              throw new Error('Invalid canvas dimensions');
             }
 
             // Use the position and dimensions of the original PSD layer
@@ -351,20 +348,19 @@ export async function renderDraftPreviewsWithLayers(
               // Canvas is wider than target area
               drawWidth = width;
               drawHeight = width / aspectRatio;
-              offsetX = 0;
               offsetY = (height - drawHeight) / 2;
             } else {
               // Canvas is taller than target area
               drawHeight = height;
               drawWidth = height * aspectRatio;
               offsetX = (width - drawWidth) / 2;
-              offsetY = 0;
             }
 
             // Draw the rendered layer canvas
             // ctx.globalAlpha = psdLayer.opacity !== undefined ? psdLayer.opacity / 255 : 1;
             ctx.drawImage(layerCanvas, left + offsetX, top + offsetY, drawWidth, drawHeight);
             ctx.globalAlpha = 1;
+
 
             ctx.save();
 
