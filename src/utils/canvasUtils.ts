@@ -332,9 +332,6 @@ export const renderClippedImage = (
         0, 0, objBounds.width, objBounds.height
       );
 
-      console.log('dpr', dpr);
-      console.log('srcW', objBounds.width * dpr, 'destW', objBounds.width);
-
       // Restore the original object positions
       originalPositions.forEach(item => {
         item.object.left = item.left;
