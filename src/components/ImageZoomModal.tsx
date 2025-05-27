@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Close, FormPrevious, FormNext } from "grommet-icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeNavigate } from "../hooks/useSwipeNavigate";
@@ -12,7 +13,7 @@ interface ImageZoomModalProps {
   productName: string;
   totalImages: number;
   currentIndex: number;
-  allImages: { viewUrl: string }[];
+  allImages: any[];
 }
 
 const ImageZoomModal = ({
@@ -32,14 +33,17 @@ const ImageZoomModal = ({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       document.body.classList.add(MODAL_BODY_CLASS);
+      document.documentElement.classList.add(MODAL_BODY_CLASS);
     } else {
       document.body.style.overflow = '';
       document.body.classList.remove(MODAL_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_BODY_CLASS);
     }
 
     return () => {
       document.body.style.overflow = '';
       document.body.classList.remove(MODAL_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_BODY_CLASS);
     };
   }, [isOpen]);
 
@@ -99,22 +103,27 @@ const ImageZoomModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  // Render the modal directly at the document body level
+  return createPortal(
     <div className="zoom-modal">
       <div className="zoom-modal-container">
         <button
           onClick={onClose}
           className="close-button"
+          type="button"
         >
           <Close width={36} height={36} color="white" />
         </button>
 
-        <button
-          onClick={handlePrevious}
-          className="nav-button-zoom left"
-        >
-          <FormPrevious width={42} height={42} color="white" />
-        </button>
+        {totalImages > 1 && (
+          <button
+            onClick={handlePrevious}
+            className="nav-button-zoom left"
+            type="button"
+          >
+            <FormPrevious width={42} height={42} color="white" />
+          </button>
+        )}
 
         <div
           className="zoom-image-container"
@@ -136,14 +145,18 @@ const ImageZoomModal = ({
           </AnimatePresence>
         </div>
 
-        <button
-          onClick={handleNext}
-          className="nav-button-zoom right"
-        >
-          <FormNext width={42} height={42} color="white" />
-        </button>
+        {totalImages > 1 && (
+          <button
+            onClick={handleNext}
+            className="nav-button-zoom right"
+            type="button"
+          >
+            <FormNext width={42} height={42} color="white" />
+          </button>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

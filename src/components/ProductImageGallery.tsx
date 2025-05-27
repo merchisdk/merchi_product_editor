@@ -120,6 +120,7 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
           <button
             onClick={() => setIsZoomModalOpen(true)}
             className="zoom-button"
+            type="button"
           >
             <ZoomIn className="zoom-icon" />
           </button>
@@ -150,6 +151,7 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
                   key={index}
                   onClick={() => handleThumbnailClick(index)}
                   className={`thumbnail-button ${isSelected ? 'selected' : ''}`}
+                  type="button"
                 >
                   <img
                     src={imageSrc}
@@ -163,7 +165,6 @@ const ProductImageGallery: React.FC<ImageGalleryProps> = ({ fallbackImageUrl = '
           </div>
         </div>
       )}
-
       <ImageZoomModal
         isOpen={isZoomModalOpen}
         onClose={() => setIsZoomModalOpen(false)}

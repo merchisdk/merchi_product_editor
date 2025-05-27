@@ -11,6 +11,7 @@ const ImageNavButton = ({ direction, onClick }: ImageNavButtonProps) => (
     onClick={onClick}
     className={`nav-button ${direction}`}
     aria-label={direction === 'left' ? 'Previous image' : 'Next image'}
+    type="button"
   >
     {direction === 'left'
       ? <FormPrevious className="nav-button-icon" color="#6b7280" />

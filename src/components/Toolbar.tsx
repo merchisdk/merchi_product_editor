@@ -1,5 +1,5 @@
 import React from 'react';
-import { Apps, Redo, Undo, View } from 'grommet-icons';
+import { Apps, View, Trash, Layer } from 'grommet-icons';
 import { useProductEditor } from '../context/ProductEditorContext';
 import { addTextToCanvas } from '../utils/canvasUtils';
 import '../styles/Toolbar.css';
@@ -13,6 +13,11 @@ export default function Toolbar() {
     height,
     showPreview,
     togglePreview,
+    showLayerPanel,
+    toggleLayerPanel,
+    deleteObject,
+    selectedObjectId,
+    renderedDraftPreviews
   } = useProductEditor();
 
   // Add handleAddText function before the return statement
@@ -22,6 +27,18 @@ export default function Toolbar() {
   };
 
   const toggleGrid = () => setShowGrid(!showGrid);
+
+  // Handle delete button click
+  const handleDelete = () => {
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      deleteObject(activeObject);
+    }
+  };
+
+  // Check if previews are available
+  const hasPreview = renderedDraftPreviews && renderedDraftPreviews.length > 0;
 
   return (
     <>
@@ -39,24 +56,30 @@ export default function Toolbar() {
       {/* Preview toggle button */}
       <div className="preview-toggle">
         <div
-          className={`toolbar-button ${showPreview ? 'active' : ''}`}
-          onClick={togglePreview}
+          className={`toolbar-button ${showPreview && hasPreview ? 'active' : ''} ${!hasPreview ? 'disabled' : ''}`}
+          onClick={hasPreview ? togglePreview : undefined}
         >
           <View width={24} height={24} />
-          <span>{showPreview ? 'Hide Preview' : 'Show Preview'}</span>
+          <span>{hasPreview && showPreview ? 'Hide Preview' : 'Show Preview'}</span>
         </div>
       </div>
 
-      {/* Redo and Undo buttons */}
-      <div className="toolbar-content">
-        <div className="toolbar-button">
-          <Undo width={24} height={24} />
-          <span>Undo</span>
-        </div>
-        <div className="toolbar-button">
-          <Redo width={24} height={24} />
-          <span>Redo</span>
-        </div>
+      {/* Layer button */}
+      <div
+        className={`toolbar-button ${showLayerPanel ? 'active' : ''}`}
+        onClick={toggleLayerPanel}
+      >
+        <Layer width={24} height={24} />
+        <span>Layer</span>
+      </div>
+
+      {/* Delete button */}
+      <div
+        className={`toolbar-button ${!selectedObjectId ? 'disabled' : ''}`}
+        onClick={handleDelete}
+      >
+        <Trash width={24} height={24} />
+        <span>Delete</span>
       </div>
     </>
   );

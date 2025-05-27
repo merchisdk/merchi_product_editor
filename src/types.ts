@@ -30,6 +30,8 @@ export interface MerchiFile {
   downloadUrlExpires?: Date | null;
   viewUrl: string;
   downloadUrl?: string;
+  thumbnailUrl?: string;
+  previewUrl?: string;
 }
 
 export interface DraftTemplate {
@@ -201,4 +203,45 @@ export interface ProductEditorProps {
   onSave?: (editedImage: string) => void;
   onCancel?: () => void;
   psdTemplateUrl?: string;
+}
+
+export interface SavedCanvasObject {
+  fieldId: string;
+  fileId?: string;
+  uniqueId?: string; // Add uniqueId property to the interface
+  type: string;
+  left: number;
+  top: number;
+  scaleX: number;
+  scaleY: number;
+  angle: number;
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fill?: string;
+  width?: number;
+  height?: number;
+  src?: string;
+  [key: string]: any; // Allow for other properties
+}
+
+// New DraftTemplateData type definition that includes all requested properties
+export interface DraftTemplateData {
+  template: DraftTemplate;
+  variationFieldIds: number[]; // List of IDs for all variation fields in this template
+  variationObjects: any[];     // Objects associated with the variation fields
+}
+
+export interface RenderedDraftPreview {
+  templateId: number;
+  draft: string; // base64 string of the template artwork as a draft
+  canvasPreview: string; // base64 string of the template rendered with the full canvas
+}
+
+export interface MappedPreview {
+  draftPreview: DraftPreview;
+  draftPreviewLayers: {
+    layerName: string | undefined;
+    renderedLayer: RenderedDraftPreview | null;
+  }[];
 }
