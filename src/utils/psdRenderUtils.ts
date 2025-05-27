@@ -164,22 +164,9 @@ function createFallbackImage(width: number, height: number, draftPreviewId: numb
  * @param dataUrl The data URL to convert
  * @returns Promise that resolves to a Canvas element
  */
-async function dataUrlToCanvas(dataUrl: string): Promise<HTMLCanvasElement> {
+async function dataUrlToCanvas(dataUrl: string): Promise<HTMLImageElement> {
   // First load the data URL as an image
-  const img = await loadImage(dataUrl);
-
-  // Create a canvas with the same dimensions
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  // Draw the image onto the canvas
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.drawImage(img, 0, 0);
-  }
-
-  return canvas;
+  return await loadImage(dataUrl);
 }
 
 /**
@@ -358,11 +345,14 @@ export async function renderDraftPreviewsWithLayers(
 
             // Draw the rendered layer canvas
             // ctx.globalAlpha = psdLayer.opacity !== undefined ? psdLayer.opacity / 255 : 1;
+            ctx.restore();
             ctx.drawImage(layerCanvas, left + offsetX, top + offsetY, drawWidth, drawHeight);
             ctx.globalAlpha = 1;
 
-
             ctx.save();
+
+
+          
 
           } catch (error) {
             console.error(`Failed to load rendered layer image for "${draftPreviewLayer.layerName}"`, error);
